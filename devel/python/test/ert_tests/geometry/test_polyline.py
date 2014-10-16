@@ -179,7 +179,6 @@ class PolylineTest(ExtendedTestCase):
             GeometryTools.extendToEdge( bound , l1 )
 
         l3 = GeometryTools.extendToEdge( bound , l2 )
-        print l3
         self.assertEqual( l3[0] , (0.00,0.00))
         self.assertEqual( l3[1] , (0.25,0.25))
         self.assertEqual( l3[2] , (0.75,0.75))
