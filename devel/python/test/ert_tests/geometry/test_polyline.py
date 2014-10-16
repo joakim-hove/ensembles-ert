@@ -163,6 +163,10 @@ class PolylineTest(ExtendedTestCase):
         self.assertEqual( l1[0] , l3[2] )
         self.assertEqual( l1[1] , l3[3] )
 
+        l4 = l1
+        l4 += l2
+        self.assertEqual(l3 , l4)
+
         
         
     def test_extend_to_edge(self):

@@ -24,7 +24,8 @@ class Polyline(object):
     def __iadd__(self , other ):
         for p in other:
             self.__points.append( p )
-            
+        return self
+
 
     def __add__(self , other ):
         copy = Polyline( init_points = self)
