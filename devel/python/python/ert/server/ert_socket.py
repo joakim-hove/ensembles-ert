@@ -64,6 +64,9 @@ class ErtHandler(SocketServer.StreamRequestHandler):
         shutdown_thread.start()
 
 
+class ThreadedSocket(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
+    pass
+    
 
 
 class ErtSocket(object):
@@ -71,6 +74,8 @@ class ErtSocket(object):
     def __init__(self , config_file , port , host = "localhost"):
         self.open(config_file)
         self.server = SocketServer.TCPServer((host , port) , ErtHandler)
+        #self.server = ThreadedSocket((host , port) , ErtHandler)
+
 
     def open(self , config_file):
         try:
@@ -86,4 +91,5 @@ class ErtSocket(object):
 
     def listen(self):
         self.server.serve_forever( )
+        
         

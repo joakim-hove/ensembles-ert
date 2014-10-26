@@ -19,8 +19,8 @@ import threading
 import json
 import os
 
-from ert.enkf import EnKFMain,RunArg
-from ert.enkf.enums import EnkfRunType , EnkfStateType
+from ert.enkf import EnKFMain,RunArg,EnkfFsManager
+from ert.enkf.enums import EnkfRunType, EnkfStateType, ErtImplType , EnkfVarType , RealizationStateEnum
 from ert.enkf import NodeId
 
 from .run_context import RunContext
@@ -42,12 +42,13 @@ class ErtServer(object):
                 raise IOError("The config file:%s does not exist" % config_file)
         self.initCmdTable()
         self.run_context = None
-
+        self.init_fs = None
+        self.run_fs = None
 
 
     def initCmdTable(self):
         self.cmd_table = {"STATUS" : self.handleSTATUS ,
-                          "INIT_SIMULATIONS" : self.handleINIT_SIMULATIONS ,
+                          "INIT_SIMULATIONS" : self.handleINIT_SIMULATIONS , 
                           "ADD_SIMULATION" : self.handleADD_SIMULATION ,
                           "SET_VARIABLE" : self.handleSET_VARIABLE ,
                           "GET_RESULT" : self.handleGET_RESULT }
@@ -92,22 +93,33 @@ class ErtServer(object):
             if self.run_context is None:
                 return ["READY"]
             else:
-                return ["RUNNING" , self.run_context.getNumRunning() , self.run_context.getNumComplete()]
+                if self.run_context.isRunning():
+                    return ["RUNNING" , self.run_context.getNumRunning() , self.run_context.getNumComplete()]
+                else:
+                    return ["COMPLETE"]
         else:
             return ["CLOSED"]
 
 
     def handleINIT_SIMULATIONS(self , args):
-        if len(args) == 2:
+        if len(args) == 3:
             if self.run_context is None:
                 run_size = args[0]
-                init_case = args[1]
-                self.run_context = RunContext(self.ert_handle , run_size , init_case)
+                init_case = str(args[1])
+                run_case = str(args[2])
+
+                fs_manager = self.ert_handle.getEnkfFsManager()
+                self.run_fs = fs_manager.getFileSystem( run_case )
+                self.init_fs = fs_manager.getFileSystem( init_case )
+                fs_manager.switchFileSystem( self.run_fs )
+                
+                self.run_context = RunContext(self.ert_handle , run_size , self.run_fs  )
                 return self.handleSTATUS([])
             else:
                 raise ErtCmdError("The ert server has already started simulations")
         else:
-            raise ErtCmdError("The INIT_SIMULATIONS command expects two arguments: [ensemble_size , init_case]")
+            raise ErtCmdError("The INIT_SIMULATIONS command expects three arguments: [ensemble_size , init_case, run_case]")
+
 
     
     def handleGET_RESULT(self , args):
@@ -138,6 +150,7 @@ class ErtServer(object):
         pert_id = args[1]
         iens = args[2]
         kw = str(args[3])
+
         ensembleConfig = self.ert_handle.ensembleConfig()
         if ensembleConfig.hasKey(kw):
             state = self.ert_handle[iens]
@@ -153,6 +166,36 @@ class ErtServer(object):
             
 
 
+    # ["ADD_SIMULATION" , "0" , "1" , "1" [ ["KW1" , ...] , ["KW2" , ....]]]
     def handleADD_SIMULATION(self , args):
-        iens = args[0]
+        geo_id = args[0]
+        pert_id = args[1]
+        iens = args[2]
+        kw_list = args[3]
+        state = self.ert_handle.getRealisation( iens )
+        state.addSubstKeyword( "GEO_ID" , "%s" % geo_id )
+        
+
+        ens_config = self.ert_handle.ensembleConfig()
+        for kw in ens_config.getKeylistFromVarType( EnkfVarType.PARAMETER ):
+            node = state[kw]
+            init_id = NodeId(0 , geo_id , EnkfStateType.ANALYZED )
+            run_id = NodeId(0 , iens , EnkfStateType.ANALYZED )
+            node.load( self.init_fs , init_id )
+            node.save( self.run_fs , run_id )
+            state_map = self.run_fs.getStateMap()
+            state_map[iens] = RealizationStateEnum.STATE_INITIALIZED
+
+
+        for kw_arg in kw_list:
+            kw = str(kw_arg[0])
+            data = kw_arg[1:]
+        
+            node = state[kw]
+            gen_kw = node.asGenKw()
+            gen_kw.setValues(data)
+        
+            run_id = NodeId(0 , iens , EnkfStateType.ANALYZED )
+            node.save( self.run_fs , run_id )
+
         self.run_context.startSimulation( iens )

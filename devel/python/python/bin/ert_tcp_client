@@ -2,6 +2,7 @@
 import sys
 import socket
 import json
+import time
 
 class Connection(object):
     def __init__(self , port , host):
@@ -14,10 +15,11 @@ class Connection(object):
             sys.exit("Failed to connect to port:%d at %s." % (port , host))
 
 
-    def sendRecv(self , send):
-        self.socket.sendall( json.dumps(send) + "\n" )
+    def sendRecv(self , data):
+        self.socket.sendall( json.dumps(data) + "\n" )
         recv = self.socket.recv(1024)
         return json.loads(recv)
+
 
 
 def readArgv():
@@ -66,7 +68,39 @@ def runCmdFile(filename, port , host):
             if cmd:
                 conn = Connection(port,host)
                 conn.sendRecv( cmd )
+
+
+
+def runJsonFile(filename , port , host):
+    with open(filename) as fileH:
+        for json_cmd in fileH.readlines():
+            json_cmd = json_cmd.strip()
+            if json_cmd:
+                try:
+                    data = json.loads( json_cmd )
+                    print "Sending: %s" % data
+                    conn = Connection(port,host)
+                    result = conn.sendRecv( data )
+                    print "Result:  %s" % result
+                    print
+                except  ValueError,e:
+                    print "The line:%s was not valid json. Error:%s" % (json_cmd , e)
             
+
+def poll():
+    while True:
+        conn = Connection(port,host)
+        result = conn.sendRecv( ["STATUS"] )
+        if str(result[0]) == "COMPLETE":
+            conn = Connection(port,host)
+            conn.sendRecv( ["QUIT"] )
+            break
+        else:
+            print result
+        time.sleep( 3 )
+        
+        
+
 #-----------------------------------------------------------------
 
 
@@ -77,14 +111,15 @@ host = "localhost"
 #else:
 #    host = "localhost"
 
-runCmdFile( sys.argv[2] , port , host )
+runJsonFile( sys.argv[2] , port , host )
+poll()
 
-while True:
-    cmd = raw_input("Function to send: ==> ")
-    argv = readArgv()
-    cmdExpr = [cmd] + argv
-    
-    conn = Connection(port,host)
-    print "Return from server: %s\n" % conn.sendRecv(cmdExpr)
-    if cmd == "QUIT":
-        break
+#while True:
+#    cmd = raw_input("Function to send: ==> ")
+#    argv = readArgv()
+#    cmdExpr = [cmd] + argv
+#    
+#    conn = Connection(port,host)
+#    print "Return from server: %s\n" % conn.sendRecv(cmdExpr)
+#    if cmd == "QUIT":
+#        break
