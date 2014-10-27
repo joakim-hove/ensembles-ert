@@ -73,8 +73,8 @@ class ErtSocket(object):
 
     def __init__(self , config_file , port , host = "localhost"):
         self.open(config_file)
-        self.server = SocketServer.TCPServer((host , port) , ErtHandler)
-        #self.server = ThreadedSocket((host , port) , ErtHandler)
+        #self.server = SocketServer.TCPServer((host , port) , ErtHandler)
+        self.server = ThreadedSocket((host , port) , ErtHandler)
 
 
     def open(self , config_file):
