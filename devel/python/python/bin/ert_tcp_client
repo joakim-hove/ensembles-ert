@@ -9,6 +9,7 @@ class Connection(object):
         self.socket = socket.socket( socket.AF_INET , socket.SOCK_STREAM)
         self.port = port
         self.host = host
+        self.socket.setblocking(1)
         try:
             self.socket.connect((self.host , self.port))
         except socket.error:
@@ -89,14 +90,15 @@ def runJsonFile(filename , port , host):
 
 def poll():
     while True:
-        conn = Connection(port,host)
-        result = conn.sendRecv( ["STATUS"] )
+        status_conn = Connection(port,host)
+        result = status_conn.sendRecv( ["STATUS"] )
         if str(result[0]) == "COMPLETE":
-            conn = Connection(port,host)
-            conn.sendRecv( ["QUIT"] )
+            quit_conn = Connection(port,host)
+            quit_conn.sendRecv( ["QUIT"] )
             break
         else:
             print result
+
         time.sleep( 3 )
         
         
