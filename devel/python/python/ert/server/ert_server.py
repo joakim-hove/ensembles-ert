@@ -133,7 +133,7 @@ class ErtServer(object):
 
         ensembleConfig = self.ert_handle.ensembleConfig()
         if ensembleConfig.hasKey( kw ):
-            state = self.ert_handle[iens]
+            state = self.ert_handle.getRealisation( iens )
             node = state[kw]
             gen_data = node.asGenData()
             
