@@ -22,6 +22,7 @@ import os
 from ert.enkf import EnKFMain,RunArg,EnkfFsManager
 from ert.enkf.enums import EnkfRunType, EnkfStateType, ErtImplType , EnkfVarType , RealizationStateEnum
 from ert.enkf import NodeId
+from ert.util import installAbortSignals
 
 from .run_context import RunContext
 
@@ -34,6 +35,8 @@ class ErtServer(object):
     site_config = None
 
     def __init__(self , config_file = None):
+        installAbortSignals()
+
         self.ert_handle = None
         if config_file:
             if os.path.exists(config_file):
@@ -44,6 +47,7 @@ class ErtServer(object):
         self.run_context = None
         self.init_fs = None
         self.run_fs = None
+
 
 
     def initCmdTable(self):
