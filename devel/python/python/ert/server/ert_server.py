@@ -115,7 +115,8 @@ class ErtServer(object):
         self.run_fs = fs_manager.getFileSystem( run_case )
         self.init_fs = fs_manager.getFileSystem( init_case )
         fs_manager.switchFileSystem( self.run_fs )
-        
+
+        print "Creating run context for %d simulations" % run_size
         self.run_context = RunContext(self.ert_handle , run_size , self.run_fs  )
         return self.handleSTATUS([])
 
@@ -226,4 +227,6 @@ class ErtServer(object):
         state_map = self.run_fs.getStateMap()
         state_map[iens] = RealizationStateEnum.STATE_INITIALIZED
 
+        print "Starting simulation:%d" % iens
         self.run_context.startSimulation( iens )
+        return self.handleSTATUS([])
