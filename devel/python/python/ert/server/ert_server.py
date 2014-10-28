@@ -124,8 +124,6 @@ class ErtServer(object):
         self.init_fs = fs_manager.getFileSystem( init_case )
         fs_manager.switchFileSystem( self.run_fs )
 
-        print "Creating context"
-        print "self.run_count:%d" % self.run_count
         self.run_context = RunContext(self.ert_handle , run_size , self.run_fs  , self.run_count)
         self.run_count += 1
         return self.handleSTATUS([])
