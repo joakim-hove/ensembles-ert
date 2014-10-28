@@ -72,9 +72,8 @@ class ThreadedSocket(SocketServer.ThreadingMixIn, SocketServer.TCPServer):
 class ErtSocket(object):
 
     def __init__(self , config_file , port , host = "localhost"):
-        self.open(config_file)
-        #self.server = SocketServer.TCPServer((host , port) , ErtHandler)
         self.server = ThreadedSocket((host , port) , ErtHandler)
+        self.open(config_file)
 
 
     def open(self , config_file):
