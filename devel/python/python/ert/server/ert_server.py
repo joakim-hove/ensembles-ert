@@ -18,6 +18,7 @@ import sys
 import threading
 import json
 import os
+import threading 
 
 from ert.enkf import EnKFMain,RunArg,EnkfFsManager
 from ert.enkf.enums import EnkfRunType, EnkfStateType, ErtImplType , EnkfVarType , RealizationStateEnum
@@ -125,13 +126,20 @@ class ErtServer(object):
 
     def handleINIT_SIMULATIONS(self , args):
         if len(args) == 3:
-            if self.run_context is None:
-                return self.initSimulations( args )
-            else:
-                if self.run_context.isRunning():
-                    raise ErtCmdError("The ert server has already started simulations")
+            lock = threading.Lock()
+            try:
+                lock.acquire()
+                if self.run_context is None:
+                    result = self.initSimulations( args )
                 else:
-                    return self.restartSimulations( args )
+                    if self.run_context.isRunning():
+                        raise ErtCmdError("The ert server has already started simulations")
+                    else:
+                        result = self.restartSimulations( args )
+                        
+            finally:
+                lock.release()
+
         else:
             raise ErtCmdError("The INIT_SIMULATIONS command expects three arguments: [ensemble_size , init_case, run_case]")
 
