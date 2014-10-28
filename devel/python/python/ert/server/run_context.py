@@ -32,10 +32,12 @@ class RunContext(object):
         mask[size - 1] = True
         model_config = self.ert_handle.getModelConfig()
 
+        # This code does not work because the runpath variable of the true ert
+        # context is destroyed by the first replace <ELCO_RUN_COUNT>.
         runpath_fmt = model_config.getRunpathAsString()
         runpath_fmt = runpath_fmt.replace("<ELCO_RUN_COUNT>" , "%s" % run_count)
         model_config.setRunpath( runpath_fmt )
-
+        
         self.ert_run_context = self.ert_handle.getRunContextENSEMPLE_EXPERIMENT( run_fs , mask )
         
 
