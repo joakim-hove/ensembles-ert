@@ -47,4 +47,9 @@ class RunContext(object):
     
     def startSimulation(self , iens):
         self.ert_handle.submitSimulation( self.ert_run_context.iensGet( iens ))
-    
+
+
+    def realisationComplete(self, iens):
+        run_arg = self.ert_run_context.iensGet( iens )
+        queue_index = run_arg.getQueueIndex()
+        return self.queue_manager.jobComplete( queue_index )

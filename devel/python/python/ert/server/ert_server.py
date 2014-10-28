@@ -99,7 +99,14 @@ class ErtServer(object):
                 return ["READY"]
             else:
                 if self.run_context.isRunning():
-                    return ["RUNNING" , self.run_context.getNumRunning() , self.run_context.getNumComplete()]
+                    if len(args) == 0:
+                        return ["RUNNING" , self.run_context.getNumRunning() , self.run_context.getNumComplete()]
+                    else:
+                        iens = args[0]
+                        if self.run_context.realisationComplete(iens):
+                            return ["COMPLETE"]
+                        else:
+                            return ["RUNNING"]
                 else:
                     return ["COMPLETE"]
         else:
@@ -116,7 +123,6 @@ class ErtServer(object):
         self.init_fs = fs_manager.getFileSystem( init_case )
         fs_manager.switchFileSystem( self.run_fs )
 
-        print "Creating run context for %d simulations" % run_size
         self.run_context = RunContext(self.ert_handle , run_size , self.run_fs  )
         return self.handleSTATUS([])
 
@@ -131,13 +137,9 @@ class ErtServer(object):
             try:
                 lock.acquire()
                 if self.run_context is None:
-                    print "Creating brand new simulation collection"
                     result = self.initSimulations( args )
                 else:
-                    if self.run_context.isRunning():
-                        print "SImulations are already running - INIT_SIMULATIONS ignored"
-                    else:
-                        print "Restarting simulation collection"
+                    if not self.run_context.isRunning():
                         result = self.restartSimulations( args )
                         
             finally:
@@ -227,6 +229,5 @@ class ErtServer(object):
         state_map = self.run_fs.getStateMap()
         state_map[iens] = RealizationStateEnum.STATE_INITIALIZED
 
-        print "Starting simulation:%d" % iens
         self.run_context.startSimulation( iens )
         return self.handleSTATUS([])

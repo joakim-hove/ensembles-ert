@@ -104,11 +104,23 @@ def runJsonFile(filename , port , host):
 
 def block_while_running():
     while True:
-        result = Connection.runCommand( ["STATUS"] , port , host )
-        if str(result[0]) == "COMPLETE":
+        complete = True
+        for iens in range(4):
+            tmp = Connection.runCommand( ["STATUS" , iens] , port , host )
+            result = str(tmp[0])
+            if result != "COMPLETE":
+                complete = False
+
+            print "%d:%s" % (iens , result)
+
+        print "-----------------------------------------------------------------"
+        if complete:
             break
-        else:
-            print result
+        #result = Connection.runCommand( ["STATUS"] , port , host )
+        #if str(result[0]) == "COMPLETE":
+        #    break
+        #else:
+        #    print result
 
         time.sleep( 3 )
         
