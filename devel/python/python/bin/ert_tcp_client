@@ -22,6 +22,12 @@ class Connection(object):
         return json.loads(recv)
 
 
+    @staticmethod
+    def runCommand( cmd , port , host):
+        conn = Connection( port , host )
+        return conn.sendRecv( cmd )
+
+
 
 def readArgv():
     while True:
@@ -67,9 +73,15 @@ def runCmdFile(filename, port , host):
         for line in fileH.readlines():
             cmd = parseCmdLine(line[:-1])
             if cmd:
-                conn = Connection(port,host)
-                conn.sendRecv( cmd )
+                Connection.runCommand( cmd , port , host )
 
+
+
+def runClient(args):
+    if args[0] == "BLOCK":
+        block_while_running()
+    else:
+        raise Exception("Unkown client sub command:%s" % args[0])
 
 
 def runJsonFile(filename , port , host):
@@ -78,23 +90,22 @@ def runJsonFile(filename , port , host):
             json_cmd = json_cmd.strip()
             if json_cmd:
                 try:
-                    data = json.loads( json_cmd )
-                    print "Sending: %s" % data
-                    conn = Connection(port,host)
-                    result = conn.sendRecv( data )
-                    print "Result:  %s" % result
-                    print
+                    cmd = json.loads( json_cmd )
+                    if cmd[0] == "CLIENT":
+                        runClient( cmd[1:] )
+                    else:
+                        print "Sending: %s" % cmd
+                        result = Connection.runCommand( cmd , port , host )
+                        print "Result:  %s" % result
+                        print
                 except  ValueError,e:
                     print "The line:%s was not valid json. Error:%s" % (json_cmd , e)
             
 
-def poll():
+def block_while_running():
     while True:
-        status_conn = Connection(port,host)
-        result = status_conn.sendRecv( ["STATUS"] )
+        result = Connection.runCommand( ["STATUS"] , port , host )
         if str(result[0]) == "COMPLETE":
-            quit_conn = Connection(port,host)
-            quit_conn.sendRecv( ["QUIT"] )
             break
         else:
             print result
@@ -114,7 +125,13 @@ host = "localhost"
 #    host = "localhost"
 
 runJsonFile( sys.argv[2] , port , host )
-poll()
+
+
+
+#conn = Conection(port , host)
+#cmd = ["GET_RESULT" , 0 , 1 , "KEY"]
+
+
 
 #while True:
 #    cmd = raw_input("Function to send: ==> ")

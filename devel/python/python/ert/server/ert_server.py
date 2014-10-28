@@ -104,23 +104,34 @@ class ErtServer(object):
         else:
             return ["CLOSED"]
 
+    
+    def initSimulations(self , args):
+        run_size = args[0]
+        init_case = str(args[1])
+        run_case = str(args[2])
+        
+        fs_manager = self.ert_handle.getEnkfFsManager()
+        self.run_fs = fs_manager.getFileSystem( run_case )
+        self.init_fs = fs_manager.getFileSystem( init_case )
+        fs_manager.switchFileSystem( self.run_fs )
+        
+        self.run_context = RunContext(self.ert_handle , run_size , self.run_fs  )
+        return self.handleSTATUS([])
+
+
+    def restartSimulations(self , args):
+        return self.initSimulations(args)
+
 
     def handleINIT_SIMULATIONS(self , args):
         if len(args) == 3:
             if self.run_context is None:
-                run_size = args[0]
-                init_case = str(args[1])
-                run_case = str(args[2])
-
-                fs_manager = self.ert_handle.getEnkfFsManager()
-                self.run_fs = fs_manager.getFileSystem( run_case )
-                self.init_fs = fs_manager.getFileSystem( init_case )
-                fs_manager.switchFileSystem( self.run_fs )
-                
-                self.run_context = RunContext(self.ert_handle , run_size , self.run_fs  )
-                return self.handleSTATUS([])
+                return self.initSimulations( args )
             else:
-                raise ErtCmdError("The ert server has already started simulations")
+                if self.run_context.isRunning():
+                    raise ErtCmdError("The ert server has already started simulations")
+                else:
+                    return self.restartSimulations( args )
         else:
             raise ErtCmdError("The INIT_SIMULATIONS command expects three arguments: [ensemble_size , init_case, run_case]")
 
