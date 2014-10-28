@@ -130,11 +130,13 @@ class ErtServer(object):
             try:
                 lock.acquire()
                 if self.run_context is None:
+                    print "Creating brand new simulation collection"
                     result = self.initSimulations( args )
                 else:
                     if self.run_context.isRunning():
-                        raise ErtCmdError("The ert server has already started simulations")
+                        print "SImulations are already running - INIT_SIMULATIONS ignored"
                     else:
+                        print "Restarting simulation collection"
                         result = self.restartSimulations( args )
                         
             finally:
