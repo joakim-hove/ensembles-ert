@@ -19,7 +19,7 @@ from ert.enkf import RunArg
 from ert.util import BoolVector
 
 class RunContext(object):
-    def __init__(self , ert_handle , size , run_fs):
+    def __init__(self , ert_handle , size , run_fs , run_count):
         self.ert_handle = ert_handle
         self.size = size
         self.runner = ert_handle.getEnkfSimulationRunner()
@@ -30,6 +30,12 @@ class RunContext(object):
 
         mask = BoolVector( default_value = True )
         mask[size - 1] = True
+        model_config = self.ert_handle.getModelConfig()
+
+        runpath_fmt = model_config.getRunpathAsString()
+        runpath_fmt = runpath_fmt.replace("<ELCO_RUN_COUNT>" , "%s" % run_count)
+        model_config.setRunpath( runpath_fmt )
+
         self.ert_run_context = self.ert_handle.getRunContextENSEMPLE_EXPERIMENT( run_fs , mask )
         
 

@@ -48,6 +48,7 @@ class ErtServer(object):
         self.run_context = None
         self.init_fs = None
         self.run_fs = None
+        self.run_count = 0
 
 
 
@@ -123,7 +124,10 @@ class ErtServer(object):
         self.init_fs = fs_manager.getFileSystem( init_case )
         fs_manager.switchFileSystem( self.run_fs )
 
-        self.run_context = RunContext(self.ert_handle , run_size , self.run_fs  )
+        print "Creating context"
+        print "self.run_count:%d" % self.run_count
+        self.run_context = RunContext(self.ert_handle , run_size , self.run_fs  , self.run_count)
+        self.run_count += 1
         return self.handleSTATUS([])
 
 
@@ -134,17 +138,20 @@ class ErtServer(object):
     def handleINIT_SIMULATIONS(self , args):
         if len(args) == 3:
             lock = threading.Lock()
+            result = []
             try:
                 lock.acquire()
                 if self.run_context is None:
-                    result = self.initSimulations( args )
+                    self.initSimulations( args )
                 else:
                     if not self.run_context.isRunning():
-                        result = self.restartSimulations( args )
-                        
+                        self.restartSimulations( args )
+                
+                result = ["OK"]
             finally:
                 lock.release()
-
+                
+            return result
         else:
             raise ErtCmdError("The INIT_SIMULATIONS command expects three arguments: [ensemble_size , init_case, run_case]")
 
