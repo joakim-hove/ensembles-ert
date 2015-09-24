@@ -1102,6 +1102,15 @@ static void assert_size_equal(int ens_size , const bool_vector_type * ens_mask) 
     util_abort("%s: fundamental inconsisentcy detected. Total ens_size:%d  mask_size:%d \n",__func__ , ens_size , bool_vector_size( ens_mask ));
 }
 
+static void debug_msg__(const char * func , int line , const char * fmt , ...)  {
+  va_list ap;
+  va_start(ap, fmt);
+  printf("%s:%d: " , func , line);
+  vprintf(fmt , ap);
+  va_end(ap);
+}
+
+#define debug_msg(fmt , ...) debug_msg__(__func__ , __LINE__ , fmt , ##__VA_ARGS__)
 
 static void enkf_main_analysis_update( enkf_main_type * enkf_main ,
                                        enkf_fs_type * target_fs ,
@@ -1131,7 +1140,7 @@ static void enkf_main_analysis_update( enkf_main_type * enkf_main ,
   matrix_type * localA  = NULL;
   int_vector_type * iens_active_index = bool_vector_alloc_active_index_list(ens_mask , -1);
 
-
+  debug_msg("Started - all matrices allocated\n");
   assert_matrix_size(X , "X" , active_ens_size , active_ens_size);
   assert_matrix_size(S , "S" , active_size , active_ens_size);
   assert_matrix_size(R , "R" , active_size , active_size);
@@ -1151,6 +1160,8 @@ static void enkf_main_analysis_update( enkf_main_type * enkf_main ,
   if (analysis_module_check_option( module , ANALYSIS_USE_A) || analysis_module_check_option(module , ANALYSIS_UPDATE_A))
     localA = A;
 
+  debug_msg("Moduel queries complete\n");
+
   /*****************************************************************/
 
   analysis_module_init_update( module , ens_mask , S , R , dObs , E , D );
@@ -1167,6 +1178,7 @@ static void enkf_main_analysis_update( enkf_main_type * enkf_main ,
                                                                  A ,
                                                                  cpu_threads);
 
+    debug_msg("serialize_info allocated\n");
     // Store PC:
     if (analysis_config_get_store_PC( enkf_main->analysis_config )) {
       double truncation    = -1;
@@ -1192,6 +1204,7 @@ static void enkf_main_analysis_update( enkf_main_type * enkf_main ,
       double_vector_free( singular_values );
     }
 
+    debug_msg("Calling initX\n");
     if (localA == NULL)
       analysis_module_initX( module , X , NULL , S , R , dObs , E , D );
 
@@ -1199,11 +1212,13 @@ static void enkf_main_analysis_update( enkf_main_type * enkf_main ,
     while (!hash_iter_is_complete( dataset_iter )) {
       const char * dataset_name = hash_iter_get_next_key( dataset_iter );
       const local_dataset_type * dataset = local_ministep_get_dataset( ministep , dataset_name );
+      debug_msg("Iterating through the datasaet - looking at:%s  size:%d\n" , dataset_name , local_dataset_get_size( dataset ));
       if (local_dataset_get_size( dataset )) {
         int * active_size = util_calloc( local_dataset_get_size( dataset ) , sizeof * active_size );
         int * row_offset  = util_calloc( local_dataset_get_size( dataset ) , sizeof * row_offset  );
 
         enkf_main_serialize_dataset( enkf_main , dataset , step2 ,  use_count , active_size , row_offset , tp , serialize_info);
+	debug_msg("Serialize complete \n");
 
         if (analysis_module_check_option( module , ANALYSIS_UPDATE_A)){
           if (analysis_module_check_option( module , ANALYSIS_ITERABLE)){
@@ -1219,10 +1234,10 @@ static void enkf_main_analysis_update( enkf_main_type * enkf_main ,
 
           matrix_inplace_matmul_mt2( A , X , tp );
         }
-
+	debug_msg("Update complete \n");
         // The deserialize also calls enkf_node_store() functions.
         enkf_main_deserialize_dataset( enkf_main_get_ensemble_config( enkf_main ) , dataset , active_size , row_offset , serialize_info , tp);
-
+	debug_msg("Deserialize complete\n");
         free( active_size );
         free( row_offset );
       }
@@ -1264,7 +1279,9 @@ bool enkf_main_UPDATE(enkf_main_type * enkf_main , const int_vector_type * step_
   state_map_type * source_state_map = enkf_fs_get_state_map( source_fs );
   const analysis_config_type * analysis_config = enkf_main_get_analysis_config( enkf_main );
   const int active_ens_size = state_map_count_matching( source_state_map , STATE_HAS_DATA );
-
+  
+  debug_msg("-----------------------------------------------------------------\n");
+  debug_msg("Starting update\n");
   if (analysis_config_have_enough_realisations(analysis_config , active_ens_size)) {
     double alpha       = analysis_config_get_alpha( enkf_main->analysis_config );
     double std_cutoff  = analysis_config_get_std_cutoff( enkf_main->analysis_config );
@@ -1274,7 +1291,7 @@ bool enkf_main_UPDATE(enkf_main_type * enkf_main , const int_vector_type * step_
     bool_vector_type * ens_mask = bool_vector_alloc(total_ens_size , false);
     int_vector_type * ens_active_list = int_vector_alloc(0,0);
 
-
+    debug_msg("Have enough realisations\n");
     state_map_select_matching( source_state_map , ens_mask , STATE_HAS_DATA );
     ens_active_list = bool_vector_alloc_active_list( ens_mask );
     {
@@ -1315,10 +1332,12 @@ bool enkf_main_UPDATE(enkf_main_type * enkf_main , const int_vector_type * step_
         free( log_file );
       }
 
+      debug_msg("Starting on local_update loop\n");
       for (int ministep_nr = 0; ministep_nr < local_updatestep_get_num_ministep( updatestep ); ministep_nr++) {   /* Looping over local analysis ministep */
         local_ministep_type * ministep = local_updatestep_iget_ministep( updatestep , ministep_nr );
         local_obsdata_type   * obsdata = local_ministep_get_obsdata( ministep );
 
+	debug_msg("Doing local ministep %d/%d \n" , ministep_nr , local_updatestep_get_num_ministep( updatestep ));
         obs_data_reset( obs_data );
         meas_data_reset( meas_forecast );
 
@@ -1334,6 +1353,7 @@ bool enkf_main_UPDATE(enkf_main_type * enkf_main , const int_vector_type * step_
           ert_log_add_fmt_message(1, NULL, "Scaling standard deviation in obdsata set:%s with %g", local_obsdata_get_name(obsdata) , scale_factor);
         }
 
+	debug_msg("Fetching observation data\n");
         enkf_obs_get_obs_and_measure_data( enkf_main->obs,
                                            source_fs ,
                                            obsdata,
@@ -1342,15 +1362,17 @@ bool enkf_main_UPDATE(enkf_main_type * enkf_main , const int_vector_type * step_
                                            meas_forecast,
                                            obs_data);
 
-
-
+	debug_msg("Deactivating outliers");
         enkf_analysis_deactivate_outliers( obs_data , meas_forecast  , std_cutoff , alpha , enkf_main->verbose);
 
         if (enkf_main->verbose)
           enkf_analysis_fprintf_obs_summary( obs_data , meas_forecast  , step_list , local_ministep_get_name( ministep ) , stdout );
         enkf_analysis_fprintf_obs_summary( obs_data , meas_forecast  , step_list , local_ministep_get_name( ministep ) , log_stream );
 
-        if (obs_data_get_active_size(obs_data) > 0)
+	debug_msg("observations active_size:%d \n",obs_data_get_active_size( obs_data ));
+
+        if (obs_data_get_active_size(obs_data) > 0) {
+	  debug_msg("Calling enkf_main_analysis_update()\n");
           enkf_main_analysis_update( enkf_main ,
                                      target_fs ,
                                      ens_mask ,
@@ -1362,6 +1384,7 @@ bool enkf_main_UPDATE(enkf_main_type * enkf_main , const int_vector_type * step_
                                      ministep ,
                                      meas_forecast ,
                                      obs_data );
+	}
         else if (target_fs != source_fs) {
           ert_log_add_fmt_message( 1 , stderr , "No active observations. Parameters copied directly: %s -> %s" , enkf_fs_get_case_name( enkf_main_get_fs( enkf_main )) , enkf_fs_get_case_name( target_fs));
           enkf_main_init_case_from_existing( enkf_main ,
@@ -1388,6 +1411,8 @@ bool enkf_main_UPDATE(enkf_main_type * enkf_main , const int_vector_type * step_
     }
     bool_vector_free( ens_mask );
     int_vector_free( ens_active_list );
+    debug_msg("Update complete \n");
+    debug_msg("-----------------------------------------------------------------\n");
     return true;
   } else {
     fprintf(stderr,"** ERROR ** There are %d active realisations left, which is less than the minimum specified (%d) - stopping assimilation.\n" ,
