@@ -12,6 +12,11 @@ add_executable( enkf_plot_data enkf_plot_data.c )
 target_link_libraries( enkf_plot_data enkf test_util )
 add_test( enkf_plot_data ${EXECUTABLE_OUTPUT_PATH}/enkf_plot_data)
 
+add_executable( enkf_python_plugin enkf_python_plugin.c )
+target_link_libraries( enkf_python_plugin enkf test_util )
+add_test( enkf_python_plugin ${EXECUTABLE_OUTPUT_PATH}/enkf_python_plugin)
+
+
 add_executable( enkf_gen_data_config enkf_gen_data_config.c )
 target_link_libraries( enkf_gen_data_config enkf test_util )
 add_test( enkf_gen_data_config ${EXECUTABLE_OUTPUT_PATH}/enkf_gen_data_config

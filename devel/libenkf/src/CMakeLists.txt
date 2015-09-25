@@ -87,7 +87,7 @@ set( source_files
      custom_kw.c
      custom_kw_config.c
      custom_kw_config_set.c
-     )
+     python_plugin.c )
 
 set( header_files
      time_map.h
@@ -185,8 +185,14 @@ set( header_files
      custom_kw.h
      custom_kw_config.h
      custom_kw_config_set.h
-     )
+     python_plugin.h)
 
+
+set( PYTHON_LIBRARY "/prog/sdpsoft/python2.7.6/lib/libpython2.7.a")
+set( PYTHON_INCLUDE_DIR "/prog/sdpsoft/python2.7.6/include/python2.7")
+FIND_PACKAGE(PythonLibs 2.7 REQUIRED)
+
+include_directories( ${PYTHON_INCLUDE_DIRS} )
 
 add_library( enkf  ${LIBRARY_TYPE} ${source_files} )
 set_target_properties( enkf PROPERTIES VERSION ${ERT_VERSION_MAJOR}.${ERT_VERSION_MINOR} SOVERSION ${ERT_VERSION_MAJOR} )
@@ -194,7 +200,8 @@ set_target_properties( enkf PROPERTIES VERSION ${ERT_VERSION_MAJOR}.${ERT_VERSIO
 set( SITE_CONFIG_FILE /project/res/etc/ERT/site-config CACHE FILEPATH "Path to global ERT Configuration file")
 set_source_files_properties( site_config.c PROPERTIES COMPILE_DEFINITIONS "SITE_CONFIG_FILE=\"${SITE_CONFIG_FILE}\"")
 
-target_link_libraries( enkf ecl sched analysis rms config job_queue )
+
+target_link_libraries( enkf ecl sched analysis rms config job_queue ${PYTHON_LIBRARIES})
 
 if (USE_RUNPATH)
    add_runpath( enkf )
@@ -222,5 +229,3 @@ if (INSTALL_ERT)
 endif()
 
 #-----------------------------------------------------------------
-
-
