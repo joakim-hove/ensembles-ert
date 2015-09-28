@@ -184,6 +184,15 @@ struct enkf_main_struct {
 void enkf_main_init_internalization( enkf_main_type *  , run_mode_type  );
 void enkf_main_update_local_updates( enkf_main_type * enkf_main);
 
+static void debug_msg__(const char * func , int line , const char * fmt , ...)  {
+  va_list ap;
+  va_start(ap, fmt);
+  printf("%s:%d: " , func , line);
+  vprintf(fmt , ap);
+  va_end(ap);
+}
+
+#define debug_msg(fmt , ...) debug_msg__(__func__ , __LINE__ , fmt , ##__VA_ARGS__)
 
 
 /*****************************************************************/
@@ -900,11 +909,13 @@ static void enkf_main_deserialize_dataset( ensemble_config_type * ensemble_confi
                                            serialize_info_type * serialize_info ,
                                            thread_pool_type * work_pool ) {
 
+  debug_msg("Starting deserialize\n");
   int num_cpu_threads = thread_pool_get_max_running( work_pool );
   stringlist_type * update_keys = local_dataset_alloc_keys( dataset );
   for (int i = 0; i < stringlist_get_size( update_keys ); i++) {
     const char             * key         = stringlist_iget(update_keys , i);
     enkf_config_node_type * config_node  = ensemble_config_get_node( ensemble_config , key );
+    debug_msg("Deserialzing: %s \n" , key);
     if ((serialize_info[0].run_mode == SMOOTHER_UPDATE) && (enkf_config_node_get_var_type( config_node ) != PARAMETER))
       /*
          We have tried to serialize a dynamic node when we are in
@@ -925,14 +936,17 @@ static void enkf_main_deserialize_dataset( ensemble_config_type * ensemble_confi
             serialize_info[icpu].active_list = active_list;
             serialize_info[icpu].row_offset  = row_offset[i];
 
+            debug_msg("Calling deserialize_node_mt: cpu:%d key:%s active_list:%p  row_offset:%d \n" , icpu , key , active_list , row_offset[i]);
             thread_pool_add_job( work_pool , deserialize_nodes_mt , &serialize_info[icpu]);
           }
           thread_pool_join( work_pool );
+          debug_msg("deserialize_nodes_mt complete \n");
         }
       }
     }
   }
   stringlist_free( update_keys );
+  debug_msg("Leaving\n");
 }
 
 
@@ -1102,15 +1116,6 @@ static void assert_size_equal(int ens_size , const bool_vector_type * ens_mask) 
     util_abort("%s: fundamental inconsisentcy detected. Total ens_size:%d  mask_size:%d \n",__func__ , ens_size , bool_vector_size( ens_mask ));
 }
 
-static void debug_msg__(const char * func , int line , const char * fmt , ...)  {
-  va_list ap;
-  va_start(ap, fmt);
-  printf("%s:%d: " , func , line);
-  vprintf(fmt , ap);
-  va_end(ap);
-}
-
-#define debug_msg(fmt , ...) debug_msg__(__func__ , __LINE__ , fmt , ##__VA_ARGS__)
 
 static void enkf_main_analysis_update( enkf_main_type * enkf_main ,
                                        enkf_fs_type * target_fs ,
