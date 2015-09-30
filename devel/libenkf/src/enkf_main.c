@@ -1284,6 +1284,7 @@ bool enkf_main_UPDATE(enkf_main_type * enkf_main , const int_vector_type * step_
   state_map_type * source_state_map = enkf_fs_get_state_map( source_fs );
   const analysis_config_type * analysis_config = enkf_main_get_analysis_config( enkf_main );
   const int active_ens_size = state_map_count_matching( source_state_map , STATE_HAS_DATA );
+  enkf_main->verbose = false;
   
   debug_msg("-----------------------------------------------------------------\n");
   debug_msg("Starting update\n");
