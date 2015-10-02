@@ -22,9 +22,8 @@ class LocalConfigTest(ExtendedTestCase):
             self.assertTrue(main, "Load failed")
             
             local_config = main.getLocalConfig()  
-            
-            self.UpdateStep(local_config)
-            
+            self.AllActive(local_config)
+
             self.MiniStep(local_config)
             
             self.AttachMinistep(local_config)
@@ -36,19 +35,23 @@ class LocalConfigTest(ExtendedTestCase):
             sfile = "local_config.txt"
             local_config.writeLocalConfigFile( sfile )
             self.assertTrue( os.path.isfile( sfile ))
+            
+            
 
-            
-            
+
+    def AllActive(self , local_config):
+        updateStep = local_config.getUpdatestep( )
+        ministep = updateStep[0]
+        self.assertEqual( 1 , len(ministep) )
+        dataset = ministep["ALL_DATA"]
+        
+        self.assertTrue( "PERLIN_PARAM" in dataset )
+        self.assertTrue( "PERLIN" in dataset )
+
+        obsdata = ministep.getLocalObsData()
+        self.assertEqual( len(obsdata) , 3 )
+        
  
-    def UpdateStep( self, local_config ):                        
-        # Update step
-        updatestep = local_config.createUpdatestep("UPDATESTEP")
-        self.assertTrue(isinstance(updatestep, LocalUpdateStep))        
-        local_config.installUpdatestep( updatestep )
-        self.assertEqual( local_config.igetUpdatestep( 0 ) , updatestep )
-        self.assertEqual( local_config.igetUpdatestep( 4 ) , updatestep )
-
-            
     def MiniStep( self, local_config ):                        
             
         # Ministep                                      
@@ -63,9 +66,10 @@ class LocalConfigTest(ExtendedTestCase):
     def AttachMinistep( self, local_config):                        
             
         # Update step
-        updatestep = local_config.createUpdatestep("UPDATESTEP")
+        updatestep = local_config.getUpdatestep( )
         self.assertTrue(isinstance(updatestep, LocalUpdateStep))
-        
+        n1 = len(updatestep)
+
         # Ministep                                      
         ministep = local_config.createMinistep("MINISTEP")
         self.assertTrue(isinstance(ministep, LocalMinistep))   
@@ -74,7 +78,7 @@ class LocalConfigTest(ExtendedTestCase):
         updatestep.attachMinistep(ministep)
         self.assertTrue(isinstance(updatestep[0], LocalMinistep))
         
-        self.assertEqual( len(updatestep) , 1 )            
+        self.assertEqual( len(updatestep) , n1 + 1 )            
 
 
     def LocalDataset( self, local_config ):                        
