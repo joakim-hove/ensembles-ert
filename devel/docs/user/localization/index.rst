@@ -489,7 +489,7 @@ Keyword name                                                                    
   ::
   
     # Load Eclipse grid
-    ecl_grid = EclGrid("path/to/LOCAL.GRDECL")
+    ecl_grid = local_config.getGrid( )
     
     with open("path/to/LOCAL.GRDECL","r") as fileH:
         local_kw = Ecl3DKW.read_grdecl(ecl_grid, fileH, "LOCAL")
@@ -603,7 +603,7 @@ Keyword name                                                                    
   ::
                       
     # Load Eclipse grid
-    ecl_grid = EclGrid("path/to/LOCAL.GRDECL")
+    ecl_grid = local_config.getGrid( )
     
     with open("path/to/LOCAL.GRDECL","r") as fileH:
         local_kw = Ecl3DKW.read_grdecl(ecl_grid, fileH, "LOCAL", ecl_type= EclTypeEnum.ECL_INT_TYPE)
