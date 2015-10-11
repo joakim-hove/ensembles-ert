@@ -251,11 +251,11 @@ class EnKFMain(BaseCClass):
     def getRunContextENSEMPLE_EXPERIMENT(self , fs , iactive , init_mode = EnkfInitModeEnum.INIT_CONDITIONAL , iteration = 0):
         return EnKFMain.cNamespace().alloc_run_context_ENSEMBLE_EXPERIMENT( self , fs , iactive , init_mode , iteration )
 
-    def callPython(self , python_source):
-        if os.path.isfile(python_source):
-            return EnKFMain.cNamespace().call_python(self , python_source)
-        else:
-            raise IOError("No such file: %s" % python_source)
+    #def callPython(self , python_source):
+    #    if os.path.isfile(python_source):
+    #        return EnKFMain.cNamespace().call_python(self , python_source)
+    #    else:
+    #        raise IOError("No such file: %s" % python_source)
         
 
     def getRunpathList(self):
@@ -268,7 +268,7 @@ cwrapper = CWrapper(ENKF_LIB)
 cwrapper.registerObjectType("enkf_main", EnKFMain)
 
 
-EnKFMain.cNamespace().call_python = cwrapper.prototype("bool enkf_main_call_python( enkf_main , char*)")
+#EnKFMain.cNamespace().call_python = cwrapper.prototype("bool enkf_main_call_python( enkf_main , char*)")
 EnKFMain.cNamespace().bootstrap = cwrapper.prototype("c_void_p enkf_main_bootstrap(char*, bool, bool)")
 EnKFMain.cNamespace().free = cwrapper.prototype("void enkf_main_free(enkf_main)")
 

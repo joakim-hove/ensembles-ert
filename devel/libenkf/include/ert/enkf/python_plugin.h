@@ -28,6 +28,8 @@ extern "C" {
 
   python_plugin_type * python_plugin_alloc( const char * source_file );
   void                 python_plugin_free( python_plugin_type * plugin );
+  bool                 python_plugin_exists( const python_plugin_type * plugin );
+
   UTIL_IS_INSTANCE_HEADER( python_plugin );
 
 #ifdef __cplusplus

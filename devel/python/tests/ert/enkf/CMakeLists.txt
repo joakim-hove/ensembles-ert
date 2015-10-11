@@ -35,6 +35,7 @@ set(TEST_SOURCES
     test_deprecation.py
     test_field_export.py
     test_python_call.py
+    test_python_runtime.py
 )
 
 add_python_package("python.tests.ert.enkf" ${PYTHON_INSTALL_PREFIX}/tests/ert/enkf "${TEST_SOURCES}" False)
@@ -44,6 +45,7 @@ addPythonTest(ert.enkf.enkf_obs tests.ert.enkf.test_enkf_obs.EnKFObsTest LABELS 
 addPythonTest(ert.enkf.deprecation tests.ert.enkf.test_deprecation.DeprecationTest)
 addPythonTest(ert.enkf.meas_block tests.ert.enkf.test_meas_block.MeasBlockTest)
 addPythonTest(ert.enkf.python_call tests.ert.enkf.test_python_call.PythonCallTest)
+addPythonTest(ert.enkf.python_runtime tests.ert.enkf.test_python_runtime.PythonRuntimeTest)
 addPythonTest(ert.enkf.meas_data tests.ert.enkf.test_meas_data.MeasDataTest)
 addPythonTest(ert.enkf.obs_data tests.ert.enkf.test_obs_data.ObsDataTest)
 addPythonTest(ert.enkf.gen_obs tests.ert.enkf.test_gen_obs.GenObsTest)

@@ -43,3 +43,8 @@ void python_plugin_free( python_plugin_type * plugin) {
   free( plugin->source_file );
   free( plugin );
 }
+
+
+bool python_plugin_exists( const python_plugin_type * plugin ) {
+  return util_is_file( plugin->source_file );
+}

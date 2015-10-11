@@ -87,7 +87,8 @@ set( source_files
      custom_kw.c
      custom_kw_config.c
      custom_kw_config_set.c
-     python_plugin.c )
+     python_plugin.c
+     python_runtime.c )
 
 set( header_files
      time_map.h
@@ -185,7 +186,8 @@ set( header_files
      custom_kw.h
      custom_kw_config.h
      custom_kw_config_set.h
-     python_plugin.h)
+     python_plugin.h
+     python_runtime.h)
 
 
 set( PYTHON_LIBRARY "/prog/sdpsoft/python2.7.6/lib/libpython2.7.a")
