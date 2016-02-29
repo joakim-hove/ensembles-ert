@@ -142,9 +142,10 @@
 
 struct enkf_main_struct {
   UTIL_TYPE_ID_DECLARATION;
-  enkf_fs_type         * dbase;              /* The internalized information. */
+  //enkf_fs_type         * dbase;              /* The internalized information. */
+
   ensemble_config_type * ensemble_config;    /* The config objects for the various enkf nodes.*/
-  hook_manager_type       * hook_manager;
+  hook_manager_type    * hook_manager;
   model_config_type    * model_config;
   ecl_config_type      * ecl_config;
   site_config_type     * site_config;
@@ -181,8 +182,7 @@ struct enkf_main_struct {
 
 void enkf_main_init_internalization( enkf_main_type *  , run_mode_type  );
 void enkf_main_update_local_updates( enkf_main_type * enkf_main);
-
-
+static void enkf_main_close_fs( enkf_main_type * enkf_main );
 
 /*****************************************************************/
 
@@ -398,9 +398,7 @@ void enkf_main_free(enkf_main_type * enkf_main){
 
   ranking_table_free( enkf_main->ranking_table );
   enkf_main_free_ensemble( enkf_main );
-  if (enkf_main->dbase != NULL)
-    enkf_fs_decref( enkf_main->dbase );
-
+  enkf_main_close_fs( enkf_main );
   ert_log_close();
 
   analysis_config_free(enkf_main->analysis_config);
@@ -664,8 +662,8 @@ void enkf_main_inflate(enkf_main_type * enkf_main , enkf_fs_type * target_fs , i
 
 
 
-static int __get_active_size(enkf_main_type * enkf_main , const char * key, int report_step , const active_list_type * active_list) {
-  const enkf_config_node_type * config_node = ensemble_config_get_node( enkf_main->ensemble_config , key );
+static int __get_active_size(const ensemble_config_type * ensemble_config , enkf_fs_type * fs , const char * key, int report_step , const active_list_type * active_list) {
+  const enkf_config_node_type * config_node = ensemble_config_get_node( ensemble_config , key );
   /**
      This is very awkward; the problem is that for the GEN_DATA
      type the config object does not really own the size. Instead
@@ -677,12 +675,13 @@ static int __get_active_size(enkf_main_type * enkf_main , const char * key, int 
   */
   {
     if (enkf_config_node_get_impl_type( config_node ) == GEN_DATA) {
-      enkf_node_type * node = enkf_state_get_node( enkf_main->ensemble[0] , key);
+      enkf_node_type * node = enkf_node_alloc( config_node );
       node_id_type node_id = {.report_step = report_step ,
                               .iens        = 0,
                               .state       = FORECAST };
 
-      enkf_node_load( node , enkf_main->dbase , node_id );
+      enkf_node_load( node , fs  , node_id );
+      enkf_node_free( node );
     }
   }
 
@@ -797,7 +796,7 @@ static void enkf_main_serialize_node( const char * node_key ,
    A matrix.
 */
 
-static int enkf_main_serialize_dataset( enkf_main_type * enkf_main,
+static int enkf_main_serialize_dataset( const ensemble_config_type * ens_config ,
                                         const local_dataset_type * dataset ,
                                         int report_step,
                                         hash_type * use_count ,
@@ -814,7 +813,7 @@ static int enkf_main_serialize_dataset( enkf_main_type * enkf_main,
 
   for (int ikw=0; ikw < num_kw; ikw++) {
     const char             * key         = stringlist_iget(update_keys , ikw);
-    enkf_config_node_type * config_node  = ensemble_config_get_node( enkf_main->ensemble_config , key );
+    enkf_config_node_type * config_node  = ensemble_config_get_node( ens_config , key );
     if ((serialize_info[0].run_mode == SMOOTHER_UPDATE) && (enkf_config_node_get_var_type( config_node ) != PARAMETER)) {
       /* We have tried to serialize a dynamic node when we are
          smoother update mode; that does not make sense and we just
@@ -823,8 +822,9 @@ static int enkf_main_serialize_dataset( enkf_main_type * enkf_main,
       continue;
     } else {
       const active_list_type * active_list      = local_dataset_get_node_active_list( dataset , key );
+      enkf_fs_type * src_fs = serialize_info->src_fs;
 
-      active_size[ikw] = __get_active_size( enkf_main , key , report_step , active_list );
+      active_size[ikw] = __get_active_size( ens_config , src_fs , key , report_step , active_list );
       row_offset[ikw]  = current_row;
       {
         int matrix_rows = matrix_get_rows( A );
@@ -1194,7 +1194,7 @@ static void enkf_main_analysis_update( enkf_main_type * enkf_main ,
         int * active_size = util_calloc( local_dataset_get_size( dataset ) , sizeof * active_size );
         int * row_offset  = util_calloc( local_dataset_get_size( dataset ) , sizeof * row_offset  );
 
-        enkf_main_serialize_dataset( enkf_main , dataset , step2 ,  use_count , active_size , row_offset , tp , serialize_info);
+        enkf_main_serialize_dataset( enkf_main->ensemble_config , dataset , step2 ,  use_count , active_size , row_offset , tp , serialize_info);
 
         if (analysis_module_check_option( module , ANALYSIS_UPDATE_A)){
           if (analysis_module_check_option( module , ANALYSIS_ITERABLE)){
@@ -1926,7 +1926,7 @@ void enkf_main_run_assimilation(enkf_main_type * enkf_main            ,
 
               enkf_main_assimilation_update(enkf_main , step_list);
               int_vector_free( step_list );
-              enkf_fs_fsync( enkf_main->dbase );
+              enkf_fs_fsync( result_fs );
             }
           } else {
             fprintf(stderr,"** ERROR ** There are %d active realisations left, which is less than the minimum specified (%d) - stopping assimilation.\n" ,
@@ -2459,8 +2459,8 @@ static void enkf_main_init_subst_list( enkf_main_type * enkf_main ) {
 enkf_main_type * enkf_main_alloc_empty( ) {
   enkf_main_type * enkf_main = util_malloc(sizeof * enkf_main);
   UTIL_TYPE_ID_INIT(enkf_main , ENKF_MAIN_ID);
-   ert_log_open_empty();
-  enkf_main->dbase              = NULL;
+  ert_log_open_empty();
+  //enkf_main->dbase              = NULL;
   enkf_main->ensemble           = NULL;
   enkf_main->user_config_file   = NULL;
   enkf_main->site_config_file   = NULL;
@@ -2582,7 +2582,6 @@ void enkf_main_resize_ensemble( enkf_main_type * enkf_main , int new_ens_size ) 
       /* Observe that due to the initialization of the rng - this function is currently NOT thread safe. */
       enkf_main->ensemble[iens] = enkf_state_alloc(iens,
                                                    enkf_main->rng ,
-                                                   enkf_main->dbase ,
                                                    model_config_iget_casename( enkf_main->model_config , iens ) ,
                                                    enkf_main->pre_clear_runpath                                 ,
                                                    int_vector_safe_iget( enkf_main->keep_runpath , iens)        ,
@@ -2624,19 +2623,6 @@ void enkf_main_update_node( enkf_main_type * enkf_main , const char * key ) {
 
 
 
-void enkf_main_gen_data_special( enkf_main_type * enkf_main ) {
-  stringlist_type * gen_data_keys = ensemble_config_alloc_keylist_from_impl_type( enkf_main->ensemble_config , GEN_DATA);
-  for (int i=0; i < stringlist_get_size( gen_data_keys ); i++) {
-    enkf_config_node_type * config_node = ensemble_config_get_node( enkf_main->ensemble_config , stringlist_iget( gen_data_keys , i));
-    gen_data_config_type * gen_data_config = enkf_config_node_get_ref( config_node );
-
-    if (gen_data_config_is_dynamic( gen_data_config )) {
-      gen_data_config_set_write_fs( gen_data_config, enkf_main->dbase);
-      gen_data_config_set_ens_size( gen_data_config , enkf_main->ens_size );
-    }
-  }
-  stringlist_free( gen_data_keys );
-}
 
 
 
@@ -2911,11 +2897,11 @@ enkf_main_type * enkf_main_bootstrap(const char * _model_config, bool strict , b
       site_config_add_config_items( config , false );
       site_config_init_user_mode( enkf_main->site_config );
 
-      hash_type *pre_defined_kw_map = __enkf_main_alloc_predefined_kw_map(enkf_main);
-
-      content = config_parse(config , model_config , "--" , INCLUDE_KEY , DEFINE_KEY , pre_defined_kw_map, CONFIG_UNRECOGNIZED_WARN , true);
-
-      hash_free(pre_defined_kw_map);
+      {
+        hash_type *pre_defined_kw_map = __enkf_main_alloc_predefined_kw_map(enkf_main);
+        content = config_parse(config , model_config , "--" , INCLUDE_KEY , DEFINE_KEY , pre_defined_kw_map, CONFIG_UNRECOGNIZED_WARN , true);
+        hash_free(pre_defined_kw_map);
+      }
 
       if (!config_content_is_valid( content )) {
 	config_error_type * errors = config_content_get_errors( content );
@@ -3105,7 +3091,6 @@ enkf_main_type * enkf_main_bootstrap(const char * _model_config, bool strict , b
       config_free(config);
     }
     enkf_main_init_jobname( enkf_main );
-    enkf_main_gen_data_special( enkf_main );
     free( model_config );
   }
   return enkf_main;

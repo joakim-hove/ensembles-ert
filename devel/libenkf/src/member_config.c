@@ -26,7 +26,6 @@
 
 #include <ert/enkf/ecl_config.h>
 #include <ert/enkf/member_config.h>
-#include <ert/enkf/enkf_fs.h>
 #include <ert/enkf/enkf_types.h>
 #include <ert/enkf/ensemble_config.h>
 
@@ -46,7 +45,6 @@ struct member_config_struct {
   bool                    pre_clear_runpath;   /* Should the runpath directory be cleared before starting? */ 
   char                  * jobname;             /* The jobname used for this job when submitting to the queue system. */
   char                  * eclbase;             /* The ECLBASE string used for simulations of this member. */
-  enkf_fs_type          * fs_cache;            /* UGly */ 
 };
 
 
@@ -162,8 +160,7 @@ member_config_type * member_config_alloc(int iens ,
                                          bool                         pre_clear_runpath , 
                                          keep_runpath_type            keep_runpath , 
                                          const ecl_config_type      * ecl_config , 
-                                         const ensemble_config_type * ensemble_config,
-                                         enkf_fs_type * fs) {
+                                         const ensemble_config_type * ensemble_config) {
 
                                                 
   member_config_type * member_config = util_malloc( sizeof * member_config );

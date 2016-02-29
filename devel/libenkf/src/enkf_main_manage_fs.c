@@ -403,6 +403,21 @@ static void enkf_main_write_current_case_file( const enkf_main_type * enkf_main,
 }
 
 
+static void enkf_main_gen_data_special( enkf_main_type * enkf_main , enkf_fs_type * fs ) {
+  stringlist_type * gen_data_keys = ensemble_config_alloc_keylist_from_impl_type( enkf_main->ensemble_config , GEN_DATA);
+  for (int i=0; i < stringlist_get_size( gen_data_keys ); i++) {
+    enkf_config_node_type * config_node = ensemble_config_get_node( enkf_main->ensemble_config , stringlist_iget( gen_data_keys , i));
+    gen_data_config_type * gen_data_config = enkf_config_node_get_ref( config_node );
+
+    if (gen_data_config_is_dynamic( gen_data_config )) {
+      gen_data_config_set_write_fs( gen_data_config, fs );
+      gen_data_config_set_ens_size( gen_data_config , enkf_main->ens_size );
+    }
+  }
+  stringlist_free( gen_data_keys );
+}
+
+
 static void enkf_main_update_current_case( enkf_main_type * enkf_main , const char * case_path /* Can be NULL */) {
   if (!case_path)
     case_path = enkf_fs_get_case_name( enkf_main_get_fs(enkf_main) );
@@ -466,7 +481,7 @@ const char * enkf_main_get_current_fs( const enkf_main_type * enkf_main ) {
 /*
   This function will return a valid enkf_fs instance; either just a
   pointer to the current enkf_main->dbase, or alternatively it will
-  create a brand new fs instance. Because we do not really now whether
+  create a brand new fs instance. Because we do not really know whether
   a new instance has been created or not resource handling becomes
   slightly non trivial:
 
@@ -569,19 +584,19 @@ static void enkf_main_update_custom_kw_config_from_fs__(enkf_main_type * enkf_ma
 */
 
 void enkf_main_set_fs( enkf_main_type * enkf_main , enkf_fs_type * fs , const char * case_path /* Can be NULL */) {
-    if (enkf_main->dbase != fs) {
-        enkf_fs_incref( fs );
+  if (enkf_main->dbase != fs) {
+    enkf_fs_incref( fs );
 
-        if (enkf_main->dbase) {
-            enkf_fs_decref(enkf_main->dbase);
-        }
-
+    if (enkf_main->dbase)
+      enkf_fs_decref(enkf_main->dbase);
         enkf_main->dbase = fs;
         enkf_main_update_current_case(enkf_main, case_path);
 
-        enkf_main_update_summary_config_from_fs__(enkf_main, fs);
-        enkf_main_update_custom_kw_config_from_fs__(enkf_main, fs);
-    }
+    enkf_main->dbase = fs;
+    enkf_main_update_current_case(enkf_main, case_path);
+
+    enkf_main_update_summary_config_from_fs__(enkf_main, fs);
+    enkf_main_update_custom_kw_config_from_fs__(enkf_main, fs);
 }
 
 
@@ -666,3 +681,10 @@ time_map_type * enkf_main_alloc_readonly_time_map( const enkf_main_type * enkf_m
   free( mount_point );
   return time_map;
 }
+
+
+static void enkf_main_close_fs( enkf_main_type * enkf_main ) {
+  if (enkf_main->dbase != NULL)
+    enkf_fs_decref( enkf_main->dbase );
+}
+

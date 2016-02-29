@@ -37,6 +37,7 @@
 #include <ert/enkf/enkf_fs.h>
 #include <ert/enkf/config_keys.h>
 #include <ert/enkf/enkf_defaults.h>
+#include <ert/enkf/forward_load_context.h>
 
 /**
    About deactivating by the forward model
@@ -406,9 +407,10 @@ void gen_data_config_assert_size(gen_data_config_type * config , int data_size, 
    This MUST be called after gen_data_config_assert_size().
 */
 
-void gen_data_config_update_active(gen_data_config_type * config, int report_step , const bool_vector_type * data_mask) {
+void gen_data_config_update_active(gen_data_config_type * config, const forward_load_context_type * load_context, const bool_vector_type * data_mask) {
   pthread_mutex_lock( &config->update_lock );
   {
+    int report_step = forward_load_context_get_report_step( load_context );
     if ( int_vector_iget( config->data_size_vector , report_step ) > 0) {
       if (config->active_report_step != report_step) {
         /* This is the first ensemeble member loading for this
@@ -434,10 +436,13 @@ void gen_data_config_update_active(gen_data_config_type * config, int report_ste
            i.e. we update the on-disk representation.
         */
         char * filename = util_alloc_sprintf("%s_active" , config->key );
-        FILE * stream   = enkf_fs_open_case_tstep_file( config->write_fs , filename , report_step , "w");
+        FILE * stream   = enkf_fs_open_case_tstep_file( forward_load_context_get_target_fs( load_context ) , 
+							filename , 
+							report_step , 
+							"w");
 
         bool_vector_fwrite( config->active_mask , stream );
-
+	
         fclose( stream );
         free( filename );
         config->mask_modified = false;

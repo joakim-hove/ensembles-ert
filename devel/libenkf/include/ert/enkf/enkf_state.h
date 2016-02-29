@@ -91,7 +91,6 @@ typedef struct enkf_state_struct    enkf_state_type;
 
   enkf_state_type  * enkf_state_alloc(int ,
                                       rng_type        * main_rng ,
-                                      enkf_fs_type * fs,
                                       const char * casename ,
                                       bool         pre_clear_runpath,
                                       keep_runpath_type ,

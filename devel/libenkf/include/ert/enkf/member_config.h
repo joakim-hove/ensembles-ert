@@ -30,7 +30,6 @@ extern "C" {
 
 #include <ert/sched/sched_file.h> 
 
-#include <ert/enkf/enkf_fs.h>
 #include <ert/enkf/enkf_types.h>
 #include <ert/enkf/ensemble_config.h>
 #include <ert/enkf/ecl_config.h>
@@ -59,8 +58,7 @@ typedef  struct member_config_struct member_config_type;
                                                  bool                         pre_clear_runpath , 
                                                  keep_runpath_type            keep_runpath      , 
                                                  const ecl_config_type      * ecl_config        , 
-                                                 const ensemble_config_type * ensemble_config   ,
-                                                 enkf_fs_type               * fs);
+                                                 const ensemble_config_type * ensemble_config);
   
 
 #ifdef __cplusplus 
