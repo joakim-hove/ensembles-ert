@@ -76,7 +76,6 @@ struct gen_data_config_struct {
   */
   bool                           dynamic;
   enkf_fs_type                 * read_fs;                   /* NBNB This will be NULL in the case of instances which are used as parameters. */
-  enkf_fs_type                 * write_fs;
   int                            ens_size;
   bool                           mask_modified;
   bool_vector_type             * active_mask;
@@ -170,7 +169,6 @@ static gen_data_config_type * gen_data_config_alloc( const char * key , bool dyn
   config->active_report_step = -1;
   config->ens_size           = -1;
   config->read_fs            = NULL;
-  config->write_fs           = NULL;
   config->dynamic            = dynamic;
   pthread_mutex_init( &config->update_lock , NULL );
 
@@ -558,10 +556,6 @@ const int_vector_type * gen_data_config_get_active_report_steps( const gen_data_
 
 void gen_data_config_set_ens_size( gen_data_config_type * config , int ens_size) {
   config->ens_size = ens_size;
-}
-
-void gen_data_config_set_write_fs(gen_data_config_type * config, enkf_fs_type * write_fs) {
-  config->write_fs = write_fs;
 }
 
 

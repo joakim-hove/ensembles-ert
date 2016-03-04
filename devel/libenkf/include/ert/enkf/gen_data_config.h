@@ -54,7 +54,6 @@ typedef enum { GEN_DATA_UNDEFINED = 0,
   gen_data_config_type       * gen_data_config_alloc_GEN_PARAM( const char * key , gen_data_file_format_type output_format , gen_data_file_format_type input_format);
   gen_data_config_type       * gen_data_config_alloc_GEN_DATA_result( const char * key , gen_data_file_format_type input_format);
   gen_data_config_type       * gen_data_config_alloc_GEN_DATA_state( const char * key , gen_data_file_format_type output_format , gen_data_file_format_type input_format);
-  void                         gen_data_config_set_write_fs( gen_data_config_type * config, enkf_fs_type * write_fs);
   void                         gen_data_config_set_ens_size( gen_data_config_type * config , int ens_size );
   gen_data_file_format_type    gen_data_config_get_input_format ( const gen_data_config_type * );
   gen_data_file_format_type    gen_data_config_get_output_format ( const gen_data_config_type * );
