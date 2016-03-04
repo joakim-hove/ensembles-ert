@@ -27,12 +27,14 @@ extern "C" {
 #include <ert/ecl/ecl_sum.h>
 #include <ert/ecl/ecl_file.h>
 
+  //#include <ert/enkf/enkf_fs.h>
   //#include <ert/enkf/run_arg.h>
 
+  typedef struct enkf_fs_struct enkf_fs_type; // Forward declaration to avoid circular dependencies.
   typedef struct run_arg_struct run_arg_type; // Forward declaration to avoid circular dependencies.
   typedef struct forward_load_context_struct forward_load_context_type;
 
-  forward_load_context_type * forward_load_context_alloc( const run_arg_type * run_arg , const ecl_sum_type * ecl_sum , const ecl_file_type* restart_block );
+  forward_load_context_type * forward_load_context_alloc( const run_arg_type * run_arg , const ecl_sum_type * ecl_sum , ecl_file_type* restart_block );
   void                        forward_load_context_free( forward_load_context_type * load_context );
   const ecl_sum_type        * forward_load_context_get_ecl_sum( const forward_load_context_type * load_context);
   const ecl_file_type       * forward_load_context_get_restart_file( const forward_load_context_type * load_context);
@@ -41,6 +43,7 @@ extern "C" {
   const run_arg_type        * forward_load_context_get_run_arg( const forward_load_context_type * load_context );
   const char                * forward_load_context_get_run_path( const forward_load_context_type * load_context );
   int                         forward_load_context_get_load_step(const forward_load_context_type * load_context);
+  enkf_fs_type              * forward_load_context_get_result_fs( const forward_load_context_type * load_context );
 
   UTIL_IS_INSTANCE_HEADER( forward_load_context );
 

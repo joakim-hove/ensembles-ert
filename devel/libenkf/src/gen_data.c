@@ -41,7 +41,7 @@
 #include <ert/enkf/gen_data_common.h>
 #include <ert/enkf/gen_common.h>
 #include <ert/enkf/enkf_fs.h>
-#include <ert/enkf/forward_load_context.h.h>
+#include <ert/enkf/forward_load_context.h>
 
 
 /**

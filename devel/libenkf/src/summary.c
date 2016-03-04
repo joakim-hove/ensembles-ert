@@ -251,11 +251,11 @@ void summary_user_get_vector(const summary_type * summary , const char * index_k
 bool summary_forward_load(summary_type * summary , const char * ecl_file_name , const forward_load_context_type * load_context) {
   bool loadOK = false;
   double load_value;
+  int report_step                    = forward_load_context_get_load_step( load_context );
   const ecl_sum_type * ecl_sum = forward_load_context_get_ecl_sum( load_context );
   if (ecl_sum != NULL) {
     const char * var_key               = summary_config_get_var(summary->config);
     load_fail_type load_fail_action    = summary_config_get_load_fail_mode(summary->config );
-    int report_step                    = forward_load_context_get_report_step( load_context );
 
     /* Check if the ecl_sum instance has this report step. */
     if (ecl_sum_has_report_step( ecl_sum , report_step )) {

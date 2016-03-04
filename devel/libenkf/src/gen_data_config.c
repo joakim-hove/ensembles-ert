@@ -410,7 +410,7 @@ void gen_data_config_assert_size(gen_data_config_type * config , int data_size, 
 void gen_data_config_update_active(gen_data_config_type * config, const forward_load_context_type * load_context, const bool_vector_type * data_mask) {
   pthread_mutex_lock( &config->update_lock );
   {
-    int report_step = forward_load_context_get_report_step( load_context );
+    int report_step = forward_load_context_get_load_step( load_context );
     if ( int_vector_iget( config->data_size_vector , report_step ) > 0) {
       if (config->active_report_step != report_step) {
         /* This is the first ensemeble member loading for this
@@ -436,7 +436,7 @@ void gen_data_config_update_active(gen_data_config_type * config, const forward_
            i.e. we update the on-disk representation.
         */
         char * filename = util_alloc_sprintf("%s_active" , config->key );
-        FILE * stream   = enkf_fs_open_case_tstep_file( forward_load_context_get_target_fs( load_context ) , 
+        FILE * stream   = enkf_fs_open_case_tstep_file( forward_load_context_get_result_fs( load_context ) , 
 							filename , 
 							report_step , 
 							"w");

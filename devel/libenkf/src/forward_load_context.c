@@ -16,6 +16,7 @@
    for more details.
 */
 
+#include <ert/util/type_macros.h>
 
 #include <ert/enkf/forward_load_context.h>
 #include <ert/enkf/run_arg.h>
@@ -39,13 +40,14 @@ struct forward_load_context_struct {
   int load_result;
 };
 
+UTIL_IS_INSTANCE_FUNCTION( forward_load_context , FORWARD_LOAD_CONTEXT_TYPE_ID)
 
-forward_load_context_type * forward_load_context_alloc( const run_arg_type * run_arg , const ecl_sum_type * ecl_sum , const ecl_file_type* restart_block) {
-  forward_model_context_type * load_context = util_malloc( sizeof * load_context );
+forward_load_context_type * forward_load_context_alloc( const run_arg_type * run_arg , const ecl_sum_type * ecl_sum , ecl_file_type* restart_file) {
+  forward_load_context_type * load_context = util_malloc( sizeof * load_context );
   UTIL_TYPE_ID_INIT( load_context , FORWARD_LOAD_CONTEXT_TYPE_ID );
 
   load_context->ecl_sum = ecl_sum; // Could maybe let the load context load the eclipse files?
-  load_context->restart_block = restart_block;
+  load_context->restart_file = restart_file;
   load_context->run_arg = run_arg;
 
   return load_context;
@@ -61,7 +63,7 @@ const ecl_sum_type * forward_load_context_get_ecl_sum( const forward_load_contex
 }
 
 const ecl_file_type * forward_load_context_get_restart_file( const forward_load_context_type * load_context) {
-  return load_context->restart_block;
+  return load_context->restart_file;
 }
 
 const run_arg_type * forward_load_context_get_run_arg( const forward_load_context_type * load_context ) {
@@ -69,7 +71,12 @@ const run_arg_type * forward_load_context_get_run_arg( const forward_load_contex
 }
 
 const char * forward_load_context_get_run_path( const forward_load_context_type * load_context ) {
-  return run_arg_get_run_path( load_context->run_arg );
+  return run_arg_get_runpath( load_context->run_arg );
+}
+
+
+enkf_fs_type * forward_load_context_get_result_fs( const forward_load_context_type * load_context ) {
+  return run_arg_get_result_fs( load_context );
 }
 
 
@@ -85,5 +92,5 @@ int forward_load_context_get_load_step(const forward_load_context_type * load_co
 }
 
 
-UTIL_IS_INSTANCE_FUNCTION( forward_load_context )
+
 

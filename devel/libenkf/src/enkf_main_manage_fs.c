@@ -425,7 +425,7 @@ static void enkf_main_update_current_case( enkf_main_type * enkf_main , const ch
   enkf_main_write_current_case_file(enkf_main, case_path);
   update_case_log(enkf_main , case_path);
 
-  enkf_main_gen_data_special( enkf_main );
+  enkf_main_gen_data_special( enkf_main , enkf_main_get_fs( enkf_main ));
   enkf_main_add_subst_kw( enkf_main , "ERT-CASE" , enkf_main_get_current_fs( enkf_main ) , "Current case" , true );
   enkf_main_add_subst_kw( enkf_main , "ERTCASE"  , enkf_main_get_current_fs( enkf_main ) , "Current case" , true );
 }
@@ -589,14 +589,13 @@ void enkf_main_set_fs( enkf_main_type * enkf_main , enkf_fs_type * fs , const ch
 
     if (enkf_main->dbase)
       enkf_fs_decref(enkf_main->dbase);
-        enkf_main->dbase = fs;
-        enkf_main_update_current_case(enkf_main, case_path);
 
     enkf_main->dbase = fs;
     enkf_main_update_current_case(enkf_main, case_path);
 
     enkf_main_update_summary_config_from_fs__(enkf_main, fs);
     enkf_main_update_custom_kw_config_from_fs__(enkf_main, fs);
+  }
 }
 
 
@@ -683,7 +682,7 @@ time_map_type * enkf_main_alloc_readonly_time_map( const enkf_main_type * enkf_m
 }
 
 
-static void enkf_main_close_fs( enkf_main_type * enkf_main ) {
+void enkf_main_close_fs( enkf_main_type * enkf_main ) {
   if (enkf_main->dbase != NULL)
     enkf_fs_decref( enkf_main->dbase );
 }

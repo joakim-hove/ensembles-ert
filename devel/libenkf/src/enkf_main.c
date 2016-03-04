@@ -142,7 +142,7 @@
 
 struct enkf_main_struct {
   UTIL_TYPE_ID_DECLARATION;
-  //enkf_fs_type         * dbase;              /* The internalized information. */
+  enkf_fs_type         * dbase;              /* The internalized information. */
 
   ensemble_config_type * ensemble_config;    /* The config objects for the various enkf nodes.*/
   hook_manager_type    * hook_manager;

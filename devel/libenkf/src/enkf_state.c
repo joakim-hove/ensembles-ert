@@ -670,7 +670,7 @@ static bool enkf_state_internalize_dynamic_eclipse_results(enkf_state_type * enk
         }
 
         stringlist_free(keys);
-        ecl_sum_free( summary );  // Now we discard the ecl_sum instance under the feet of the load_context.
+        ecl_sum_free( (ecl_sum_type *) summary );  // Now we discard the ecl_sum instance under the feet of the load_context.
         int_vector_free( time_index );
         return true;
       } else {
@@ -889,7 +889,7 @@ static void enkf_state_internalize_eclipse_state(enkf_state_type * enkf_state ,
 
 static forward_load_context_type * enkf_state_alloc_load_context( const enkf_state_type * state , run_arg_type * run_arg, stringlist_type * messages, int * result) {
   const ecl_sum_type * ecl_sum = NULL;
-  const ecl_file_type * restart_block = NULL;
+  ecl_file_type * restart_file = NULL;
 
   {
     bool load_summary = ensemble_config_has_impl_type(state->ensemble_config, SUMMARY);
@@ -901,7 +901,7 @@ static forward_load_context_type * enkf_state_alloc_load_context( const enkf_sta
   
   forward_load_context_type * load_context = forward_load_context_alloc( run_arg,
 									 ecl_sum , 
-									 restart_block );
+									 restart_file );
   return load_context;
 }
 

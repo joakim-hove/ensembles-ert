@@ -64,7 +64,7 @@ typedef enum { GEN_DATA_UNDEFINED = 0,
   int                          gen_data_config_get_initial_size( const gen_data_config_type * config );
   void                         gen_data_config_assert_size(gen_data_config_type *  , int , int);
   const bool_vector_type     * gen_data_config_get_active_mask( const gen_data_config_type * config );
-  void                         gen_data_config_update_active(gen_data_config_type * config , const forward_load_context_type * load_context , int report_step , const bool_vector_type * data_mask);
+  void                         gen_data_config_update_active(gen_data_config_type * config , const forward_load_context_type * load_context , const bool_vector_type * data_mask);
   const bool     *             gen_data_config_get_iactive(const gen_data_config_type * );
   void                         gen_data_config_ecl_write(const gen_data_config_type *  , const char * , char * );
   void                         gen_data_config_get_template_data( const gen_data_config_type * , char ** , int * , int * , int *);
