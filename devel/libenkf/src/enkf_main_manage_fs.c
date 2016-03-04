@@ -97,16 +97,17 @@ void enkf_main_set_case_table( enkf_main_type * enkf_main , const char * case_ta
 
 static void * enkf_main_initialize_from_scratch_mt(void * void_arg) {
   arg_pack_type * arg_pack           = arg_pack_safe_cast( void_arg );
-  enkf_main_type * enkf_main         = arg_pack_iget_ptr( arg_pack , 0);
-  const stringlist_type * param_list = arg_pack_iget_const_ptr( arg_pack , 1 );
-  int iens                          = arg_pack_iget_int( arg_pack , 2 );
-  init_mode_type init_mode           = arg_pack_iget_int( arg_pack , 3 );
+  enkf_main_type  * enkf_main        = arg_pack_iget_ptr( arg_pack , 0);
+  enkf_fs_type * init_fs             = arg_pack_iget_ptr( arg_pack , 1);
+  const stringlist_type * param_list = arg_pack_iget_const_ptr( arg_pack , 2 );
+  int iens                           = arg_pack_iget_int( arg_pack , 3 );
+  init_mode_type init_mode           = arg_pack_iget_int( arg_pack , 4 );
   enkf_state_type * state = enkf_main_iget_state( enkf_main , iens);
-  enkf_state_initialize( state , enkf_main_get_fs( enkf_main ) , param_list , init_mode);
+  enkf_state_initialize( state , init_fs , param_list , init_mode);
   return NULL;
 }
 
-void enkf_main_initialize_from_scratch_with_bool_vector(enkf_main_type * enkf_main , const stringlist_type * param_list ,const bool_vector_type * iens_mask , init_mode_type init_mode) {
+void enkf_main_initialize_from_scratch_with_bool_vector(enkf_main_type * enkf_main , enkf_fs_type * init_fs , const stringlist_type * param_list ,const bool_vector_type * iens_mask , init_mode_type init_mode) {
   int num_cpu = 4;
   int ens_size               = enkf_main_get_ensemble_size( enkf_main );
   thread_pool_type * tp     = thread_pool_alloc( num_cpu , true );
@@ -117,14 +118,14 @@ void enkf_main_initialize_from_scratch_with_bool_vector(enkf_main_type * enkf_ma
   for (iens = 0; iens < ens_size; iens++) {
     arg_list[iens] = arg_pack_alloc();
     if (bool_vector_safe_iget(iens_mask , iens)) {
-        arg_pack_append_ptr( arg_list[iens] , enkf_main );
-        arg_pack_append_const_ptr( arg_list[iens] , param_list );
-        arg_pack_append_int( arg_list[iens] , iens );
-        arg_pack_append_int( arg_list[iens] , init_mode );
-
-        thread_pool_add_job( tp , enkf_main_initialize_from_scratch_mt , arg_list[iens]);
+      arg_pack_append_ptr( arg_list[iens] , enkf_main );
+      arg_pack_append_ptr( arg_list[iens] , init_fs );
+      arg_pack_append_const_ptr( arg_list[iens] , param_list );
+      arg_pack_append_int( arg_list[iens] , iens );
+      arg_pack_append_int( arg_list[iens] , init_mode );
+      
+      thread_pool_add_job( tp , enkf_main_initialize_from_scratch_mt , arg_list[iens]);
     }
-
   }
   thread_pool_join( tp );
   for (i = 0; i < ens_size; i++){
@@ -134,16 +135,16 @@ void enkf_main_initialize_from_scratch_with_bool_vector(enkf_main_type * enkf_ma
   thread_pool_free( tp );
 }
 
-void enkf_main_initialize_from_scratch(enkf_main_type * enkf_main , const stringlist_type * param_list , int iens1 , int iens2, init_mode_type init_mode) {
-    int iens;
-    int ens_size = enkf_main_get_ensemble_size( enkf_main );
-    bool_vector_type * iens_mask = bool_vector_alloc(ens_size,false);
+void enkf_main_initialize_from_scratch(enkf_main_type * enkf_main , enkf_fs_type * init_fs , const stringlist_type * param_list , int iens1 , int iens2, init_mode_type init_mode) {
+  int iens;
+  int ens_size = enkf_main_get_ensemble_size( enkf_main );
+  bool_vector_type * iens_mask = bool_vector_alloc(ens_size,false);
 
-    for (iens = iens1; iens <= iens2; iens++) {
-            bool_vector_iset( iens_mask , iens , true );
-    }
-    enkf_main_initialize_from_scratch_with_bool_vector(enkf_main, param_list, iens_mask, init_mode);
-    bool_vector_free(iens_mask);
+  for (iens = iens1; iens <= iens2; iens++) 
+    bool_vector_iset( iens_mask , iens , true );
+  
+  enkf_main_initialize_from_scratch_with_bool_vector(enkf_main, init_fs, param_list, iens_mask, init_mode);
+  bool_vector_free(iens_mask);
 }
 
 

@@ -286,15 +286,17 @@ pca_plot_data_type * enkf_main_alloc_pca_plot_data( const enkf_main_type * enkf_
   void              enkf_main_set_case_table( enkf_main_type * enkf_main , const char * case_table_file );
 
   void              enkf_main_initialize_from_scratch(enkf_main_type * enkf_main ,
+						      enkf_fs_type * init_fs, 
                                                       const stringlist_type * param_list ,
                                                       int iens1 ,
                                                       int iens2,
                                                       init_mode_type init_mode);
 
   void              enkf_main_initialize_from_scratch_with_bool_vector(enkf_main_type * enkf_main ,
-                                                      const stringlist_type * param_list ,
-                                                      const bool_vector_type * iens_mask ,
-                                                      init_mode_type init_mode);
+								       enkf_fs_type * init_fs, 
+								       const stringlist_type * param_list ,
+								       const bool_vector_type * iens_mask ,
+								       init_mode_type init_mode);
 
   void              enkf_main_init_current_case_from_existing(enkf_main_type * enkf_main,
                                                               enkf_fs_type * source_case_fs,

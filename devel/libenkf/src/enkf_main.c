@@ -1787,7 +1787,11 @@ void enkf_main_init_run( enkf_main_type * enkf_main, const ert_run_context_type 
   enkf_main_init_internalization(enkf_main , ert_run_context_get_mode( run_context ));
   {
     stringlist_type * param_list = ensemble_config_alloc_keylist_from_var_type( enkf_main->ensemble_config , PARAMETER );
-    enkf_main_initialize_from_scratch_with_bool_vector(enkf_main , param_list , ert_run_context_get_iactive( run_context ) , ert_run_context_get_init_mode( run_context ));
+    enkf_main_initialize_from_scratch_with_bool_vector(enkf_main , 
+						       ert_run_context_get_init_fs( run_context ),
+						       param_list , 
+						       ert_run_context_get_iactive( run_context ) , 
+						       ert_run_context_get_init_mode( run_context ));
     stringlist_free( param_list );
   }
 }
