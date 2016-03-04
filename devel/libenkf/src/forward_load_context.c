@@ -52,17 +52,38 @@ forward_load_context_type * forward_load_context_alloc( const run_arg_type * run
 }
 
 void forward_load_context_free( forward_load_context_type * load_context ) {
+  if (load_context->restart_file)
+    ecl_file_close( load_context->restart_file );
   free( load_context );
 }
 
+bool forward_load_context_load_restart_file( forward_load_context_type * load_context , 
+					     const char * ecl_base , 
+					     bool fmt_file , 
+					     int report_step) {
 
-void forward_load_context_set_restart_file( forward_load_context_type * load_context , ecl_file_type * restart_file ) {
-  load_context->restart_file = restart_file;
-}
-
-void forward_load_context_clear_restart_file( forward_load_context_type * load_context ) {
+  char * filename = ecl_util_alloc_exfilename( run_arg_get_runpath(load_context->run_arg) , 
+					       ecl_base , 
+					       ECL_RESTART_FILE , 
+					       fmt_file , 
+					       report_step);
+  
+  if (load_context->restart_file)
+    ecl_file_close( load_context->restart_file );
   load_context->restart_file = NULL;
+
+  if (filename) {
+    load_context->restart_file = ecl_file_open( filename , 0 );
+    free(filename);
+  } 
+
+  if (load_context->restart_file)
+    return true;
+  else
+    return false;
 }
+
+
 
 
 const ecl_sum_type * forward_load_context_get_ecl_sum( const forward_load_context_type * load_context) {
@@ -83,7 +104,7 @@ const char * forward_load_context_get_run_path( const forward_load_context_type 
 
 
 enkf_fs_type * forward_load_context_get_result_fs( const forward_load_context_type * load_context ) {
-  return run_arg_get_result_fs( load_context );
+  return run_arg_get_result_fs( load_context->run_arg );
 }
 
 

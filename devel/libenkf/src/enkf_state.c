@@ -819,26 +819,15 @@ static void enkf_state_internalize_eclipse_state(enkf_state_type * enkf_state ,
     const bool fmt_file                = ecl_config_get_formatted( ecl_config );
     const bool unified                 = ecl_config_get_unified_restart( ecl_config );
     const bool internalize_state       = model_config_internalize_state( model_config , report_step );
-    ecl_file_type  * restart_file;
-
-
-    /**
-       Loading the restart block.
-    */
 
     if (unified)
       util_abort("%s: sorry - unified restart files are not supported \n",__func__);
-    {
-      char * filename  = ecl_util_alloc_exfilename(run_arg_get_runpath(run_arg) , member_config_get_eclbase(enkf_state->my_config) , ECL_RESTART_FILE , fmt_file , report_step);
-      if (filename) {
-        restart_file = ecl_file_open( filename , 0 );
-        free(filename);
-      } else
-        restart_file = NULL;  /* No restart information was found; if that is expected the program will fail hard in the enkf_node_forward_load() functions. */
-
-      forward_load_context_set_restart_file( load_context , restart_file );
-    }
-
+    
+    forward_load_context_load_restart_file( load_context , 
+					    member_config_get_eclbase(enkf_state->my_config) , 
+					    fmt_file , 
+					    report_step);
+    
     /******************************************************************/
     /**
         Starting on the enkf_node_forward_load() function calls. This
@@ -879,13 +868,6 @@ static void enkf_state_internalize_eclipse_state(enkf_state_type * enkf_state ,
         }
       }
       hash_iter_free(iter);
-    }
-
-    /*****************************************************************/
-    /* Cleaning up */
-    if (restart_file) {
-      ecl_file_close( restart_file );
-      forward_load_context_clear_restart_file( load_context );
     }
   }
 }

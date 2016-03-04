@@ -56,6 +56,9 @@ char* enkf_main_read_alloc_current_case_name(const enkf_main_type * enkf_main) {
 }
 
 
+
+
+
 stringlist_type * enkf_main_alloc_caselist( const enkf_main_type * enkf_main ) {
   stringlist_type * case_list = stringlist_alloc_new( );
   {

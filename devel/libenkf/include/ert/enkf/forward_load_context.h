@@ -45,9 +45,10 @@ extern "C" {
   int                         forward_load_context_get_load_step(const forward_load_context_type * load_context);
   enkf_fs_type              * forward_load_context_get_result_fs( const forward_load_context_type * load_context );
 
-  void 			      forward_load_context_set_restart_file( forward_load_context_type * load_context , ecl_file_type * restart_file );
-  void 			      forward_load_context_clear_restart_file( forward_load_context_type * load_context );
-
+  bool                        forward_load_context_load_restart_file( forward_load_context_type * load_context , 
+								      const char * ecl_base , 
+								      bool fmt_file , 
+								      int report_step);
 
   UTIL_IS_INSTANCE_HEADER( forward_load_context );
 
