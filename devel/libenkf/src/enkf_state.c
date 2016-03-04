@@ -802,7 +802,7 @@ static void enkf_state_internalize_GEN_DATA(enkf_state_type * enkf_state ,
 */
 
 static void enkf_state_internalize_eclipse_state(enkf_state_type * enkf_state ,
-						 const forward_load_context_type * load_context,
+						 forward_load_context_type * load_context,
 						 const model_config_type * model_config ,
                                                  int report_step ,
                                                  bool store_vectors ,
@@ -835,15 +835,17 @@ static void enkf_state_internalize_eclipse_state(enkf_state_type * enkf_state ,
         free(filename);
       } else
         restart_file = NULL;  /* No restart information was found; if that is expected the program will fail hard in the enkf_node_forward_load() functions. */
+
+      forward_load_context_set_restart_file( load_context , restart_file );
     }
 
     /******************************************************************/
     /**
-        Starting on the enkf_node_forward_load() function calls. This is where the
-        actual loading (apart from static keywords) is done. Observe that this
-        loading might involve other load functions than the ones used for
-        loading PRESSURE++ from ECLIPSE restart files (e.g. for loading seismic
-        results..)
+        Starting on the enkf_node_forward_load() function calls. This
+        is where the actual loading is done. Observe that this loading
+        might involve other load functions than the ones used for
+        loading PRESSURE++ from ECLIPSE restart files (e.g. for
+        loading seismic results..)
     */
 
     {
@@ -881,7 +883,10 @@ static void enkf_state_internalize_eclipse_state(enkf_state_type * enkf_state ,
 
     /*****************************************************************/
     /* Cleaning up */
-    if (restart_file != NULL) ecl_file_close( restart_file );
+    if (restart_file) {
+      ecl_file_close( restart_file );
+      forward_load_context_clear_restart_file( load_context );
+    }
   }
 }
 
@@ -889,7 +894,6 @@ static void enkf_state_internalize_eclipse_state(enkf_state_type * enkf_state ,
 
 static forward_load_context_type * enkf_state_alloc_load_context( const enkf_state_type * state , run_arg_type * run_arg, stringlist_type * messages, int * result) {
   const ecl_sum_type * ecl_sum = NULL;
-  ecl_file_type * restart_file = NULL;
 
   {
     bool load_summary = ensemble_config_has_impl_type(state->ensemble_config, SUMMARY);
@@ -900,8 +904,7 @@ static forward_load_context_type * enkf_state_alloc_load_context( const enkf_sta
 
   
   forward_load_context_type * load_context = forward_load_context_alloc( run_arg,
-									 ecl_sum , 
-									 restart_file );
+									 ecl_sum );
   return load_context;
 }
 

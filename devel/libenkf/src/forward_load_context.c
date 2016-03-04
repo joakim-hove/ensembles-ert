@@ -27,14 +27,12 @@
 struct forward_load_context_struct {
   UTIL_TYPE_ID_DECLARATION;
   const ecl_sum_type  * ecl_sum;
-  ecl_file_type       * restart_file;  /* This should be the whole - unrestricted restart file;
-					  during the load process calls to ecl_file_select_block()
-					  will be issued to restrict the view to only one restart
-					  block.*/
+  ecl_file_type       * restart_file;  // This is set and cleared by calling scope.
   const run_arg_type * run_arg; 
   int step1; 
   int step2; 
-  
+ 
+ 
   /* The variables below are updated during the load process. */
   int load_step;
   int load_result;
@@ -42,12 +40,12 @@ struct forward_load_context_struct {
 
 UTIL_IS_INSTANCE_FUNCTION( forward_load_context , FORWARD_LOAD_CONTEXT_TYPE_ID)
 
-forward_load_context_type * forward_load_context_alloc( const run_arg_type * run_arg , const ecl_sum_type * ecl_sum , ecl_file_type* restart_file) {
+forward_load_context_type * forward_load_context_alloc( const run_arg_type * run_arg , const ecl_sum_type * ecl_sum) {
   forward_load_context_type * load_context = util_malloc( sizeof * load_context );
   UTIL_TYPE_ID_INIT( load_context , FORWARD_LOAD_CONTEXT_TYPE_ID );
 
   load_context->ecl_sum = ecl_sum; // Could maybe let the load context load the eclipse files?
-  load_context->restart_file = restart_file;
+  load_context->restart_file = NULL;
   load_context->run_arg = run_arg;
 
   return load_context;
@@ -55,6 +53,15 @@ forward_load_context_type * forward_load_context_alloc( const run_arg_type * run
 
 void forward_load_context_free( forward_load_context_type * load_context ) {
   free( load_context );
+}
+
+
+void forward_load_context_set_restart_file( forward_load_context_type * load_context , ecl_file_type * restart_file ) {
+  load_context->restart_file = restart_file;
+}
+
+void forward_load_context_clear_restart_file( forward_load_context_type * load_context ) {
+  load_context->restart_file = NULL;
 }
 
 

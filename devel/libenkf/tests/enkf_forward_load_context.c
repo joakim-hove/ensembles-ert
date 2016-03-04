@@ -21,7 +21,7 @@
 
 
 void test_create() {
-  forward_load_context_type * load_context = forward_load_context_alloc( NULL , NULL , NULL );
+  forward_load_context_type * load_context = forward_load_context_alloc( NULL , NULL );
   test_assert_true( forward_load_context_is_instance( load_context ));
   forward_load_context_free( load_context );
 }
