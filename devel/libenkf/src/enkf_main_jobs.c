@@ -89,7 +89,7 @@ static void * enkf_main_smoother_JOB__( void * self , int iter , const stringlis
   bool_vector_type * iactive   = bool_vector_alloc( ens_size , true );
   bool valid                   = true;
   const char * target_case     = stringlist_iget( args , 0 );
-
+  enkf_fs_type * source_fs     = enkf_main_job_get_fs( enkf_main );
   //Argument 2: Rerun. Default false.
   bool rerun = (stringlist_get_size(args) >= 2) ? stringlist_iget_as_bool(args, 1, &valid) : false;
   
@@ -97,7 +97,7 @@ static void * enkf_main_smoother_JOB__( void * self , int iter , const stringlis
       fprintf(stderr, "** Warning: Function %s : Second argument must be a bool value. Exiting job\n", __func__);
       return NULL;
   }
-  enkf_main_run_smoother( enkf_main , target_case , iactive , iter , rerun);
+  enkf_main_run_smoother( enkf_main , source_fs , target_case , iactive , iter , rerun);
   bool_vector_free( iactive );
   return NULL;
 }

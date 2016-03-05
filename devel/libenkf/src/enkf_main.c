@@ -1096,13 +1096,12 @@ static void enkf_main_analysis_update( enkf_main_type * enkf_main ,
 **/
 
 
-bool enkf_main_UPDATE(enkf_main_type * enkf_main , const int_vector_type * step_list, enkf_fs_type * target_fs , int target_step , run_mode_type run_mode) {
+bool enkf_main_UPDATE(enkf_main_type * enkf_main , const int_vector_type * step_list, enkf_fs_type * source_fs , enkf_fs_type * target_fs , int target_step , run_mode_type run_mode) {
   /*
      If merge_observations is true all observations in the time
      interval [step1+1,step2] will be used, otherwise only the last
      observation at step2 will be used.
   */
-  enkf_fs_type * source_fs = enkf_main_get_fs(enkf_main);
   state_map_type * source_state_map = enkf_fs_get_state_map( source_fs );
   const analysis_config_type * analysis_config = enkf_main_get_analysis_config( enkf_main );
   const int active_ens_size = state_map_count_matching( source_state_map , STATE_HAS_DATA );
@@ -1263,19 +1262,24 @@ bool enkf_main_UPDATE(enkf_main_type * enkf_main , const int_vector_type * step_
 
 
 void enkf_main_assimilation_update(enkf_main_type * enkf_main , const int_vector_type * step_list) {
-  enkf_main_UPDATE( enkf_main , step_list , enkf_main_get_fs( enkf_main ) , int_vector_get_last( step_list ) , ENKF_ASSIMILATION );
+  enkf_main_UPDATE( enkf_main , 
+		    step_list , 
+		    enkf_main_get_fs( enkf_main ) , 
+		    enkf_main_get_fs( enkf_main ) , 
+		    int_vector_get_last( step_list ) , 
+		    ENKF_ASSIMILATION );
 }
 
 
-static bool enkf_main_smoother_update__(enkf_main_type * enkf_main , const int_vector_type * step_list , enkf_fs_type * target_fs) {
-  return enkf_main_UPDATE( enkf_main , step_list , target_fs , 0 , SMOOTHER_UPDATE );
+static bool enkf_main_smoother_update__(enkf_main_type * enkf_main , const int_vector_type * step_list , enkf_fs_type * source_fs, enkf_fs_type * target_fs) {
+  return enkf_main_UPDATE( enkf_main , step_list , source_fs , target_fs , 0 , SMOOTHER_UPDATE );
 }
 
 
-bool enkf_main_smoother_update(enkf_main_type * enkf_main , enkf_fs_type * target_fs) {
+bool enkf_main_smoother_update(enkf_main_type * enkf_main , enkf_fs_type * source_fs, enkf_fs_type * target_fs) {
   int stride = 1;
   int step2;
-  time_map_type * time_map = enkf_fs_get_time_map( enkf_main_get_fs( enkf_main ));
+  time_map_type * time_map = enkf_fs_get_time_map( source_fs );
   int_vector_type * step_list;
   bool update_done;
 
@@ -1284,7 +1288,7 @@ bool enkf_main_smoother_update(enkf_main_type * enkf_main , enkf_fs_type * targe
     step2 = model_config_get_last_history_restart( enkf_main->model_config );
 
   step_list = enkf_main_update_alloc_step_list( enkf_main , 0 , step2 , stride);
-  update_done = enkf_main_smoother_update__( enkf_main , step_list , target_fs );
+  update_done = enkf_main_smoother_update__( enkf_main , step_list , source_fs, target_fs );
   int_vector_free( step_list );
 
   return update_done;
@@ -1814,7 +1818,7 @@ bool enkf_main_run_simple_step(enkf_main_type * enkf_main , bool_vector_type * i
 
 
 
-void enkf_main_run_smoother(enkf_main_type * enkf_main , const char * target_fs_name , bool_vector_type * iactive , int iter , bool rerun) {
+void enkf_main_run_smoother(enkf_main_type * enkf_main , enkf_fs_type * source_fs, const char * target_fs_name , bool_vector_type * iactive , int iter , bool rerun) {
   analysis_config_type * analysis_config = enkf_main_get_analysis_config( enkf_main );
   if (!analysis_config_get_module_option( analysis_config , ANALYSIS_ITERABLE)) {
     if (enkf_main_run_simple_step( enkf_main , iactive , INIT_CONDITIONAL, iter)) {
@@ -1824,7 +1828,7 @@ void enkf_main_run_smoother(enkf_main_type * enkf_main , const char * target_fs_
 
     {
       enkf_fs_type * target_fs = enkf_main_mount_alt_fs( enkf_main , target_fs_name , true );
-      bool update_done = enkf_main_smoother_update( enkf_main , target_fs );
+      bool update_done = enkf_main_smoother_update( enkf_main , source_fs , target_fs );
 
       if (rerun) {
         if (update_done) {
@@ -1863,7 +1867,7 @@ static bool enkf_main_run_simulation_and_postworkflow(enkf_main_type * enkf_main
 }
 
 
-static bool enkf_main_run_analysis(enkf_main_type * enkf_main, const char * target_fs_name, int iteration_number) {
+static bool enkf_main_run_analysis(enkf_main_type * enkf_main, enkf_fs_type * source_fs ,const char * target_fs_name, int iteration_number) {
   bool updateOK                          = false;
   analysis_config_type * analysis_config = enkf_main_get_analysis_config(enkf_main);
   analysis_module_type * analysis_module = analysis_config_get_active_module(analysis_config);
@@ -1872,11 +1876,11 @@ static bool enkf_main_run_analysis(enkf_main_type * enkf_main, const char * targ
   if (target_fs_name == NULL){
     fprintf(stderr,"Sorry: the updated ensemble will overwrite the current case in the iterated ensemble smoother.");
     printf("Running analysis on case %s, target case is %s\n", enkf_main_get_current_fs(enkf_main), enkf_main_get_current_fs(enkf_main));
-    updateOK = enkf_main_smoother_update(enkf_main, enkf_main_get_fs(enkf_main));
+    updateOK = enkf_main_smoother_update(enkf_main, source_fs, enkf_main_get_fs(enkf_main));
   } else {
     enkf_fs_type * target_fs = enkf_main_mount_alt_fs(enkf_main , target_fs_name , true );
     printf("Running analysis on case %s, target case is %s\n", enkf_main_get_current_fs(enkf_main), enkf_fs_get_case_name(target_fs));
-    updateOK = enkf_main_smoother_update(enkf_main, target_fs);
+    updateOK = enkf_main_smoother_update(enkf_main, source_fs , target_fs);
     enkf_fs_decref( target_fs );
   }
 
@@ -1923,6 +1927,7 @@ void enkf_main_run_iterated_ES(enkf_main_type * enkf_main, int num_iterations_to
     { // Iteration 1 - num_iterations [iteration 1, num iterations]
       int num_retries_per_iteration = analysis_iter_config_get_num_retries_per_iteration(iter_config);
       int num_tries     = 0;
+      enkf_fs_type * source_fs = enkf_main_get_fs( enkf_main );
       current_iteration = 1;
 
       while ((current_iteration <= num_iterations_to_run) && (num_tries < num_retries_per_iteration)) {
@@ -1930,7 +1935,7 @@ void enkf_main_run_iterated_ES(enkf_main_type * enkf_main, int num_iterations_to
 
         const char * target_fs_name = analysis_iter_config_iget_case( iter_config , current_iteration );
 
-        if (enkf_main_run_analysis(enkf_main, target_fs_name, current_iteration)) {
+        if (enkf_main_run_analysis(enkf_main, source_fs, target_fs_name, current_iteration)) {
           enkf_main_select_fs(enkf_main, target_fs_name);
           if (!enkf_main_run_simulation_and_postworkflow(enkf_main, run_context ))
             break;
