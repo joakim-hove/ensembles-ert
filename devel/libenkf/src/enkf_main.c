@@ -525,8 +525,7 @@ void enkf_main_load_ensemble(enkf_main_type * enkf_main , int mask , int report_
 
 */
 
-enkf_node_type ** enkf_main_get_node_ensemble(const enkf_main_type * enkf_main , const char * key , int report_step , state_enum load_state) {
-  enkf_fs_type * fs               = enkf_main_get_fs( enkf_main );
+enkf_node_type ** enkf_main_get_node_ensemble(const enkf_main_type * enkf_main , enkf_fs_type * src_fs, const char * key , int report_step , state_enum load_state) {
   const int ens_size              = enkf_main_get_ensemble_size( enkf_main );
   enkf_node_type ** node_ensemble = util_calloc(ens_size , sizeof * node_ensemble );
   node_id_type node_id = {.report_step = report_step ,
@@ -538,7 +537,7 @@ enkf_node_type ** enkf_main_get_node_ensemble(const enkf_main_type * enkf_main ,
   for (iens = 0; iens < ens_size; iens++) {
     node_ensemble[iens] = enkf_state_get_node(enkf_main->ensemble[iens] , key);
     node_id.iens = iens;
-    enkf_node_load( node_ensemble[iens] , fs , node_id);
+    enkf_node_load( node_ensemble[iens] , src_fs , node_id);
   }
   return node_ensemble;
 }
@@ -593,9 +592,9 @@ void enkf_main_node_std( const enkf_node_type ** ensemble , int ens_size , const
 }
 
 
-void enkf_main_inflate_node(enkf_main_type * enkf_main , enkf_fs_type * target_fs , int report_step , const char * key , const enkf_node_type * min_std) {
+void enkf_main_inflate_node(enkf_main_type * enkf_main , enkf_fs_type * src_fs , enkf_fs_type * target_fs , int report_step , const char * key , const enkf_node_type * min_std) {
   int ens_size                              = enkf_main_get_ensemble_size(enkf_main);
-  enkf_node_type ** ensemble                = enkf_main_get_node_ensemble( enkf_main , key , report_step , ANALYZED );
+  enkf_node_type ** ensemble                = enkf_main_get_node_ensemble( enkf_main , src_fs , key , report_step , ANALYZED );
   enkf_node_type * mean                     = enkf_node_copyc( ensemble[0] );
   enkf_node_type * std                      = enkf_node_copyc( ensemble[0] );
   int iens;
@@ -642,7 +641,7 @@ void enkf_main_inflate_node(enkf_main_type * enkf_main , enkf_fs_type * target_f
     direkte.
 */
 
-void enkf_main_inflate(enkf_main_type * enkf_main , enkf_fs_type * target_fs , int report_step , hash_type * use_count) {
+void enkf_main_inflate(enkf_main_type * enkf_main , enkf_fs_type * src_fs , enkf_fs_type * target_fs , int report_step , hash_type * use_count) {
   stringlist_type * keys = ensemble_config_alloc_keylist_from_var_type( enkf_main->ensemble_config , PARAMETER + DYNAMIC_STATE);
 
   for (int ikey = 0; ikey < stringlist_get_size( keys ); ikey++) {
@@ -652,7 +651,7 @@ void enkf_main_inflate(enkf_main_type * enkf_main , enkf_fs_type * target_fs , i
       const enkf_node_type * min_std            = enkf_config_node_get_min_std( config_node );
 
       if (min_std != NULL)
-        enkf_main_inflate_node(enkf_main , target_fs , report_step , key , min_std );
+        enkf_main_inflate_node(enkf_main , src_fs , target_fs , report_step , key , min_std );
 
     }
   }
@@ -1389,7 +1388,7 @@ bool enkf_main_UPDATE(enkf_main_type * enkf_main , const int_vector_type * step_
       meas_data_free( meas_forecast );
       meas_data_free( meas_analyzed );
 
-      enkf_main_inflate( enkf_main , target_fs , current_step , use_count);
+      enkf_main_inflate( enkf_main , source_fs , target_fs , current_step , use_count);
       hash_free( use_count );
 
       if (target_state_map != source_state_map) {

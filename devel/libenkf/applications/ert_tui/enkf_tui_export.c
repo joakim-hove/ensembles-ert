@@ -658,7 +658,11 @@ void enkf_tui_export_stat(void * arg) {
       }
       
       {
-        enkf_node_type ** ensemble                = enkf_main_get_node_ensemble( enkf_main , enkf_config_node_get_key( config_node ) , report_step , analysis_state );
+        enkf_node_type ** ensemble                = enkf_main_get_node_ensemble( enkf_main , 
+										 enkf_main_tui_get_fs( enkf_main ) , 
+										 enkf_config_node_get_key( config_node ) , 
+										 report_step , 
+										 analysis_state );
         enkf_node_type * mean                     = enkf_node_copyc( ensemble[0] );
         enkf_node_type * std                      = enkf_node_copyc( ensemble[0] );
         
