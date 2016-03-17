@@ -26,12 +26,9 @@ extern "C" {
 
 #include <ert/ecl/ecl_sum.h>
 #include <ert/ecl/ecl_file.h>
+#include <ert/enkf/enkf_fs_type.h>
+#include <ert/enkf/run_arg_type.h>
 
-  //#include <ert/enkf/enkf_fs.h>
-  //#include <ert/enkf/run_arg.h>
-
-  typedef struct enkf_fs_struct enkf_fs_type; // Forward declaration to avoid circular dependencies.
-  typedef struct run_arg_struct run_arg_type; // Forward declaration to avoid circular dependencies.
   typedef struct forward_load_context_struct forward_load_context_type;
 
   forward_load_context_type * forward_load_context_alloc( const run_arg_type * run_arg , const ecl_sum_type * ecl_sum );

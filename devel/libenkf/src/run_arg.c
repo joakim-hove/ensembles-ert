@@ -17,6 +17,7 @@
 */
 
 
+
 #include <ert/util/path_fmt.h>
 #include <ert/util/subst_list.h>
 #include <ert/util/type_macros.h>
