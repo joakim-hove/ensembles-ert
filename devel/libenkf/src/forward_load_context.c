@@ -17,6 +17,7 @@
 */
 
 #include <ert/util/type_macros.h>
+#include <ert/util/stringlist.h>
 
 #include <ert/enkf/forward_load_context.h>
 #include <ert/enkf/run_arg.h>
@@ -28,11 +29,12 @@ struct forward_load_context_struct {
   UTIL_TYPE_ID_DECLARATION;
   const ecl_sum_type  * ecl_sum;
   ecl_file_type       * restart_file;  // This is set and cleared by calling scope.
-  const run_arg_type * run_arg; 
-  int step1; 
-  int step2; 
- 
- 
+  const run_arg_type * run_arg;
+  int step1;
+  int step2;
+  stringlist_type * messages;          // This is managed by external scope - can be NULL
+
+
   /* The variables below are updated during the load process. */
   int load_step;
   int load_result;
@@ -40,16 +42,47 @@ struct forward_load_context_struct {
 
 UTIL_IS_INSTANCE_FUNCTION( forward_load_context , FORWARD_LOAD_CONTEXT_TYPE_ID)
 
-forward_load_context_type * forward_load_context_alloc( const run_arg_type * run_arg , const ecl_sum_type * ecl_sum) {
+forward_load_context_type * forward_load_context_alloc( const run_arg_type * run_arg , const ecl_sum_type * ecl_sum, stringlist_type * messages) {
   forward_load_context_type * load_context = util_malloc( sizeof * load_context );
   UTIL_TYPE_ID_INIT( load_context , FORWARD_LOAD_CONTEXT_TYPE_ID );
 
   load_context->ecl_sum = ecl_sum; // Could maybe let the load context load the eclipse files?
   load_context->restart_file = NULL;
   load_context->run_arg = run_arg;
+  load_context->load_result = 0;
+  load_context->messages = messages;
 
   return load_context;
 }
+
+
+
+bool forward_load_context_accept_messages( const forward_load_context_type * load_context ) {
+  if (load_context->messages)
+    return true;
+  else
+    return false;
+}
+
+
+/*
+  The messages can be NULL; in which case the message is completely ignored.
+*/
+
+void forward_load_context_add_message( forward_load_context_type * load_context , const char * message ) {
+  if (load_context->messages)
+    stringlist_append_copy( load_context->messages , message );
+}
+
+
+int forward_load_context_get_result( const forward_load_context_type * load_context ) {
+  return load_context->load_result;
+}
+
+void forward_load_context_update_result( forward_load_context_type * load_context , int flags) {
+  load_context->load_result |= flags;
+}
+
 
 void forward_load_context_free( forward_load_context_type * load_context ) {
   if (load_context->restart_file)
@@ -57,17 +90,17 @@ void forward_load_context_free( forward_load_context_type * load_context ) {
   free( load_context );
 }
 
-bool forward_load_context_load_restart_file( forward_load_context_type * load_context , 
-					     const char * ecl_base , 
-					     bool fmt_file , 
+bool forward_load_context_load_restart_file( forward_load_context_type * load_context ,
+					     const char * ecl_base ,
+					     bool fmt_file ,
 					     int report_step) {
 
-  char * filename = ecl_util_alloc_exfilename( run_arg_get_runpath(load_context->run_arg) , 
-					       ecl_base , 
-					       ECL_RESTART_FILE , 
-					       fmt_file , 
+  char * filename = ecl_util_alloc_exfilename( run_arg_get_runpath(load_context->run_arg) ,
+					       ecl_base ,
+					       ECL_RESTART_FILE ,
+					       fmt_file ,
 					       report_step);
-  
+
   if (load_context->restart_file)
     ecl_file_close( load_context->restart_file );
   load_context->restart_file = NULL;
@@ -75,7 +108,7 @@ bool forward_load_context_load_restart_file( forward_load_context_type * load_co
   if (filename) {
     load_context->restart_file = ecl_file_open( filename , 0 );
     free(filename);
-  } 
+  }
 
   if (load_context->restart_file)
     return true;

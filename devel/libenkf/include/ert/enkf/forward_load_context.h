@@ -23,6 +23,7 @@
 extern "C" {
 #endif
 #include <ert/util/type_macros.h>
+#include <ert/util/stringlist.h>
 
 #include <ert/ecl/ecl_sum.h>
 #include <ert/ecl/ecl_file.h>
@@ -31,7 +32,11 @@ extern "C" {
 
   typedef struct forward_load_context_struct forward_load_context_type;
 
-  forward_load_context_type * forward_load_context_alloc( const run_arg_type * run_arg , const ecl_sum_type * ecl_sum );
+  bool                        forward_load_context_accept_messages( const forward_load_context_type * load_context );
+  void                        forward_load_context_add_message( forward_load_context_type * load_context , const char * message );
+  void                        forward_load_context_update_result( forward_load_context_type * load_context , int flags);
+  int                         forward_load_context_get_result( const forward_load_context_type * load_context );
+  forward_load_context_type * forward_load_context_alloc( const run_arg_type * run_arg , const ecl_sum_type * ecl_sum , stringlist_type * messages);
   void                        forward_load_context_free( forward_load_context_type * load_context );
   const ecl_sum_type        * forward_load_context_get_ecl_sum( const forward_load_context_type * load_context);
   const ecl_file_type       * forward_load_context_get_restart_file( const forward_load_context_type * load_context);

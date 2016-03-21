@@ -213,11 +213,10 @@ void gen_data_deserialize(gen_data_type * gen_data , node_id_type node_id , cons
 */
 
 static void gen_data_set_data__(gen_data_type * gen_data , int size, const forward_load_context_type * load_context, ecl_type_enum load_type , const void * data) {
-  gen_data_assert_size(gen_data , size, load_context);
-
+  gen_data_assert_size(gen_data , size, forward_load_context_get_load_step( load_context ));
   if (gen_data_config_is_dynamic( gen_data->config ))
     gen_data_config_update_active( gen_data->config ,  load_context , gen_data->active_mask);
-
+  
   gen_data_realloc_data(gen_data);
 
   if (size > 0) {
