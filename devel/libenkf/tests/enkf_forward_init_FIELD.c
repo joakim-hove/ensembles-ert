@@ -112,7 +112,7 @@ int main(int argc , char ** argv) {
           state_map_type * state_map = enkf_fs_get_state_map(fs);
           state_map_iset(state_map, 0, STATE_INITIALIZED);
         }
-        result = enkf_state_load_from_forward_model(state, run_arg ,  false, msg_list);
+        result = enkf_state_load_from_forward_model(state, run_arg ,  msg_list);
         stringlist_free(msg_list);
         test_assert_true(LOAD_FAILURE & result);
       }
@@ -126,7 +126,7 @@ int main(int argc , char ** argv) {
         test_assert_true( enkf_node_forward_init( field_node , "simulations/run0" , 0));
         result = enkf_state_forward_init( state , run_arg);
         test_assert_int_equal( result, 0 );
-        result = enkf_state_load_from_forward_model( state , run_arg ,  false , msg_list );
+        result = enkf_state_load_from_forward_model( state , run_arg ,  msg_list );
 
         stringlist_free( msg_list );
         test_assert_int_equal(result , 0);

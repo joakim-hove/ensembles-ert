@@ -79,7 +79,6 @@ typedef struct enkf_state_struct    enkf_state_type;
 
   int                enkf_state_load_from_forward_model(enkf_state_type * enkf_state ,
                                                         run_arg_type * run_arg ,
-                                                        bool interactive ,
                                                         stringlist_type * msg_list);
 
   int enkf_state_forward_init(enkf_state_type * enkf_state ,

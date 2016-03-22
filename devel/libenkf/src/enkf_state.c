@@ -806,9 +806,7 @@ static void enkf_state_internalize_eclipse_state(enkf_state_type * enkf_state ,
 						 forward_load_context_type * load_context,
 						 const model_config_type * model_config ,
                                                  int report_step ,
-                                                 bool store_vectors ,
-                                                 bool interactive ,
-                                                 stringlist_type * msg_list) {
+                                                 bool store_vectors) {
 
   shared_info_type   * shared_info   = enkf_state->shared_info;
   const ecl_config_type * ecl_config = shared_info->ecl_config;
@@ -861,8 +859,11 @@ static void enkf_state_internalize_eclipse_state(enkf_state_type * enkf_state ,
                 forward_load_context_update_result(load_context, LOAD_FAILURE);
                 ert_log_add_fmt_message( 1 , NULL , "[%03d:%04d] Failed load data for node:%s.",iens , report_step , enkf_node_get_key( enkf_node ));
 
-                if (interactive)
-                  stringlist_append_owned_ref(msg_list , util_alloc_sprintf("Failed to load: %s at step:%d" , enkf_node_get_key( enkf_node ) , report_step));
+                if (forward_load_context_accept_messages(load_context)) {
+                  char * msg = util_alloc_sprintf("Failed to load: %s at step:%d" , enkf_node_get_key( enkf_node ) , report_step);
+                  forward_load_context_add_message(load_context, msg);
+                  free( msg );
+                }
               }
             }
           }
@@ -905,7 +906,7 @@ static forward_load_context_type * enkf_state_alloc_load_context( const enkf_sta
 */
 
 
-static int enkf_state_internalize_results(enkf_state_type * enkf_state , run_arg_type * run_arg , bool interactive , stringlist_type * msg_list) {
+static int enkf_state_internalize_results(enkf_state_type * enkf_state , run_arg_type * run_arg , stringlist_type * msg_list) {
   model_config_type * model_config = enkf_state->shared_info->model_config;
   forward_load_context_type * load_context = enkf_state_alloc_load_context( enkf_state , run_arg , msg_list);
   int report_step;
@@ -942,9 +943,7 @@ static int enkf_state_internalize_results(enkf_state_type * enkf_state , run_arg
 					     load_context ,
 					     model_config ,
 					     report_step ,
-					     store_vectors ,
-					     interactive ,
-					     msg_list);
+					     store_vectors);
     }
 
     enkf_state_internalize_GEN_DATA(enkf_state , load_context , model_config , last_report);
@@ -1006,16 +1005,15 @@ int enkf_state_forward_init(enkf_state_type * enkf_state ,
 
 
 int enkf_state_load_from_forward_model(enkf_state_type * enkf_state ,
-                                        run_arg_type * run_arg ,
-                                        bool interactive ,
-                                        stringlist_type * msg_list) {
+                                       run_arg_type * run_arg ,
+                                       stringlist_type * msg_list) {
 
   int result = 0;
 
   if (ensemble_config_have_forward_init( enkf_state->ensemble_config ))
     result |= enkf_state_forward_init( enkf_state , run_arg );
 
-  result |= enkf_state_internalize_results( enkf_state , run_arg , interactive , msg_list );
+  result |= enkf_state_internalize_results( enkf_state , run_arg , msg_list );
   {
     state_map_type * state_map = enkf_fs_get_state_map( run_arg_get_result_fs( run_arg ) );
     int iens = member_config_get_iens( enkf_state->my_config );
@@ -1038,7 +1036,6 @@ void * enkf_state_load_from_forward_model_mt( void * arg ) {
   arg_pack_type * arg_pack     = arg_pack_safe_cast( arg );
   enkf_state_type * enkf_state = enkf_state_safe_cast(arg_pack_iget_ptr( arg_pack  , 0 ));
   run_arg_type * run_arg       = arg_pack_iget_ptr( arg_pack  , 1 );
-  bool interactive             = arg_pack_iget_bool( arg_pack , 2 );
   stringlist_type * msg_list   = arg_pack_iget_ptr( arg_pack  , 3 );
   bool manual_load             = arg_pack_iget_bool( arg_pack , 4 );
   int * result                 = arg_pack_iget_ptr( arg_pack  , 5 );
@@ -1047,14 +1044,14 @@ void * enkf_state_load_from_forward_model_mt( void * arg ) {
   if (manual_load)
     state_map_update_undefined(enkf_fs_get_state_map( run_arg_get_result_fs(run_arg) ) , iens , STATE_INITIALIZED);
 
-  *result = enkf_state_load_from_forward_model( enkf_state , run_arg , interactive , msg_list );
+  *result = enkf_state_load_from_forward_model( enkf_state , run_arg , msg_list );
   if (*result & REPORT_STEP_INCOMPATIBLE) {
     // If refcase has been used for observations: crash and burn.
     fprintf(stderr,"** Warning the timesteps in refcase and current simulation are not in accordance - something wrong with schedule file?\n");
     *result -= REPORT_STEP_INCOMPATIBLE;
   }
 
-  if (interactive) {
+  if (manual_load) {
     printf(".");
     fflush(stdout);
   }
@@ -1615,7 +1612,7 @@ static bool enkf_state_complete_forward_modelOK(enkf_state_type * enkf_state , r
      is OK the final status is updated, otherwise: restart.
   */
   ert_log_add_fmt_message( 2 , NULL , "[%03d:%04d-%04d] Forward model complete - starting to load results." , iens , run_arg_get_step1(run_arg), run_arg_get_step2(run_arg));
-  result = enkf_state_load_from_forward_model(enkf_state , run_arg , false , NULL);
+  result = enkf_state_load_from_forward_model(enkf_state , run_arg , NULL);
 
   if (result & REPORT_STEP_INCOMPATIBLE) {
     // If refcase has been used for observations: crash and burn.

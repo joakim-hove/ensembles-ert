@@ -43,7 +43,6 @@ int test_load_manually_to_new_case(enkf_main_type * enkf_main) {
     arg_pack_type * arg_pack = arg_pack_alloc();
     arg_pack_append_ptr( arg_pack , enkf_main_iget_state(enkf_main, 0));                
     arg_pack_append_ptr( arg_pack , run_arg );
-    arg_pack_append_bool( arg_pack , true );                                            
     arg_pack_append_owned_ptr( arg_pack , stringlist_alloc_new() , stringlist_free__);  
     arg_pack_append_bool( arg_pack, true );                                             
     arg_pack_append_ptr( arg_pack, &result );                                           

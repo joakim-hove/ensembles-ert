@@ -114,7 +114,7 @@ int main(int argc , char ** argv) {
           state_map_type * state_map = enkf_fs_get_state_map(fs);
           state_map_iset(state_map , 0 , STATE_INITIALIZED);
         }
-        error = enkf_state_load_from_forward_model( state , run_arg , false , msg_list );
+        error = enkf_state_load_from_forward_model( state , run_arg , msg_list );
 
         stringlist_free( msg_list );
         test_assert_int_equal(0, error); 
