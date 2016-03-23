@@ -27,8 +27,10 @@ extern "C" {
 
 #include <ert/ecl/ecl_sum.h>
 #include <ert/ecl/ecl_file.h>
+
 #include <ert/enkf/enkf_fs_type.h>
 #include <ert/enkf/run_arg_type.h>
+#include <ert/enkf/ecl_config.h>
 
   typedef struct forward_load_context_struct forward_load_context_type;
 
@@ -36,7 +38,7 @@ extern "C" {
   void                        forward_load_context_add_message( forward_load_context_type * load_context , const char * message );
   void                        forward_load_context_update_result( forward_load_context_type * load_context , int flags);
   int                         forward_load_context_get_result( const forward_load_context_type * load_context );
-  forward_load_context_type * forward_load_context_alloc( const run_arg_type * run_arg , const ecl_sum_type * ecl_sum , stringlist_type * messages);
+  forward_load_context_type * forward_load_context_alloc( const run_arg_type * run_arg , const ecl_config_type * ecl_config , const char * eclbase, stringlist_type * messages);
   void                        forward_load_context_free( forward_load_context_type * load_context );
   const ecl_sum_type        * forward_load_context_get_ecl_sum( const forward_load_context_type * load_context);
   const ecl_file_type       * forward_load_context_get_restart_file( const forward_load_context_type * load_context);
@@ -47,9 +49,7 @@ extern "C" {
   int                         forward_load_context_get_load_step(const forward_load_context_type * load_context);
   enkf_fs_type              * forward_load_context_get_result_fs( const forward_load_context_type * load_context );
 
-  bool                        forward_load_context_load_restart_file( forward_load_context_type * load_context , 
-								      const char * ecl_base , 
-								      bool fmt_file , 
+  bool                        forward_load_context_load_restart_file( forward_load_context_type * load_context ,
 								      int report_step);
 
   UTIL_IS_INSTANCE_HEADER( forward_load_context );

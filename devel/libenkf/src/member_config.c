@@ -40,7 +40,7 @@
 
 struct member_config_struct {
   int                     iens;                /* The ensemble member number of this member. */
-  char                  * casename;            /* The name of this case - will mosttly be NULL. */
+  char                  * casename;            /* The name of this case - will mostly be NULL. */
   keep_runpath_type       keep_runpath;        /* Should the run-path directory be left around (for this member)*/
   bool                    pre_clear_runpath;   /* Should the runpath directory be cleared before starting? */
   char                  * jobname;             /* The jobname used for this job when submitting to the queue system. */

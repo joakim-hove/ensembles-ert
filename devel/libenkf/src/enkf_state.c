@@ -467,80 +467,6 @@ const char * enkf_state_get_eclbase( const enkf_state_type * enkf_state ) {
 }
 
 
-static ecl_sum_type * enkf_state_load_ecl_sum(const enkf_state_type * enkf_state , const run_arg_type * run_arg , stringlist_type * messages ) {
-  const ecl_config_type * ecl_config     = enkf_state->shared_info->ecl_config;
-  if (ecl_config_active( ecl_config )) {
-    const bool fmt_file                    = ecl_config_get_formatted(ecl_config);
-    const char * eclbase                   = enkf_state_get_eclbase( enkf_state );
-
-
-    stringlist_type * data_files           = stringlist_alloc_new();
-    char * header_file                     = ecl_util_alloc_exfilename(run_arg_get_runpath(run_arg) , eclbase , ECL_SUMMARY_HEADER_FILE , fmt_file , -1);
-    char * unified_file                    = ecl_util_alloc_exfilename(run_arg_get_runpath(run_arg) , eclbase , ECL_UNIFIED_SUMMARY_FILE , fmt_file ,  -1);
-    ecl_sum_type * summary                 = NULL;
-
-    /* Should we load from a unified summary file, or from several non-unified files? */
-    if (unified_file != NULL)
-      /* Use unified file: */
-      stringlist_append_ref( data_files , unified_file);
-    else {
-      /* Use several non unified files. */
-      /* Bypassing the query to model_config_load_results() */
-      int report_step = run_arg_get_load_start( run_arg );
-      if (report_step == 0)
-        report_step++;     // Ignore looking for the .S0000 summary file (it does not exist).
-      while (true) {
-        char * summary_file = ecl_util_alloc_exfilename(run_arg_get_runpath( run_arg ) , eclbase , ECL_SUMMARY_FILE , fmt_file ,  report_step);
-
-        if (summary_file != NULL)
-          stringlist_append_owned_ref( data_files , summary_file);
-        else
-          /*
-             We stop the loading at first 'hole' in the series of summary files;
-             the internalize layer must report failure if we are missing data.
-          */
-          break;
-
-        if ((run_arg_get_run_mode( run_arg ) == ENKF_ASSIMILATION) && (run_arg_get_step2( run_arg ) == report_step))
-          break;
-
-        report_step++;
-      }
-    }
-
-    if ((header_file != NULL) && (stringlist_get_size(data_files) > 0)) {
-      summary = ecl_sum_fread_alloc(header_file , data_files , SUMMARY_KEY_JOIN_STRING );
-      {
-        time_t end_time = ecl_config_get_end_date( ecl_config );
-        if (end_time > 0) {
-          if (ecl_sum_get_end_time( summary ) < end_time) {
-            /* The summary vector was shorter than expected; we interpret this as
-               a simulation failure and discard the current summary instance. */
-            {
-              int end_day,end_month,end_year;
-              int sum_day,sum_month,sum_year;
-
-              util_set_date_values( end_time , &end_day , &end_month , &end_year );
-              util_set_date_values( ecl_sum_get_end_time( summary ) , &sum_day , &sum_month , &sum_year );
-              stringlist_append_owned_ref( messages ,
-                                           util_alloc_sprintf("Summary ended at %02d/%02d/%4d - expected at least END_DATE: %02d/%02d/%4d" ,
-                                                              sum_day , sum_month , sum_year ,
-                                                              end_day , end_month , end_year ));
-            }
-            ecl_sum_free( summary );
-            summary = NULL;
-            // *result |= LOAD_FAILURE;  
-          }
-        }
-      }
-    }
-    stringlist_free( data_files );
-    util_safe_free( header_file );
-    util_safe_free( unified_file );
-    return summary;
-  } else
-    return NULL;
-}
 
 
 static void enkf_state_log_GEN_DATA_load( const enkf_node_type * enkf_node , int report_step , forward_load_context_type * load_context) {
@@ -680,7 +606,6 @@ static bool enkf_state_internalize_dynamic_eclipse_results(enkf_state_type * enk
         }
 
         stringlist_free(keys);
-        ecl_sum_free( (ecl_sum_type *) summary );  // Now we discard the ecl_sum instance under the feet of the load_context.
         int_vector_free( time_index );
         return true;
       } else {
@@ -815,16 +740,9 @@ static void enkf_state_internalize_eclipse_state(enkf_state_type * enkf_state ,
   if (ecl_config_active( ecl_config )) {
     member_config_type * my_config     = enkf_state->my_config;
     const int  iens                    = member_config_get_iens( my_config );
-    const bool fmt_file                = ecl_config_get_formatted( ecl_config );
-    const bool unified                 = ecl_config_get_unified_restart( ecl_config );
     const bool internalize_state       = model_config_internalize_state( model_config , report_step );
 
-    if (unified)
-      util_abort("%s: sorry - unified restart files are not supported \n",__func__);
-
     forward_load_context_load_restart_file( load_context ,
-					    member_config_get_eclbase(enkf_state->my_config) ,
-					    fmt_file ,
 					    report_step);
 
     /******************************************************************/
@@ -877,22 +795,29 @@ static void enkf_state_internalize_eclipse_state(enkf_state_type * enkf_state ,
 
 
 static forward_load_context_type * enkf_state_alloc_load_context( const enkf_state_type * state , run_arg_type * run_arg, stringlist_type * messages) {
-  const ecl_sum_type * ecl_sum = NULL;
-
-  {
-    bool load_summary = ensemble_config_has_impl_type(state->ensemble_config, SUMMARY);
-    if (!load_summary) {
-      const summary_key_matcher_type * matcher = ensemble_config_get_summary_key_matcher(state->ensemble_config);
-      load_summary = (summary_key_matcher_get_size(matcher) > 0);
-    }
-    if (load_summary)
-      ecl_sum = enkf_state_load_ecl_sum( state , run_arg , messages );
+  bool load_summary = ensemble_config_has_impl_type(state->ensemble_config, SUMMARY);
+  if (!load_summary) {
+    const summary_key_matcher_type * matcher = ensemble_config_get_summary_key_matcher(state->ensemble_config);
+    load_summary = (summary_key_matcher_get_size(matcher) > 0);
   }
 
-  forward_load_context_type * load_context = forward_load_context_alloc( run_arg,
-									 ecl_sum ,
-                                                                         messages );
-  return load_context;
+  {
+    forward_load_context_type * load_context;
+
+    if (load_summary) {
+      const ecl_config_type * ecl_config = state->shared_info->ecl_config;
+      const char * eclbase = enkf_state_get_eclbase( state );
+      load_context = forward_load_context_alloc( run_arg,
+                                                 ecl_config ,
+                                                 eclbase,
+                                                 messages );
+    } else
+      load_context = forward_load_context_alloc( run_arg,
+                                                 NULL,
+                                                 NULL,
+                                                 messages );
+    return load_context;
+  }
 }
 
 

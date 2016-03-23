@@ -24,7 +24,7 @@
 
 
 void test_update_result() {
-  forward_load_context_type * load_context = forward_load_context_alloc( NULL , NULL , NULL);
+  forward_load_context_type * load_context = forward_load_context_alloc( NULL , NULL , NULL , NULL);
   test_assert_int_equal( forward_load_context_get_result( load_context ) , 0 );
   forward_load_context_update_result( load_context , 1 );
   test_assert_int_equal( forward_load_context_get_result( load_context ) , 1 );
@@ -42,15 +42,15 @@ void test_update_result() {
 }
 
 void test_create() {
-  forward_load_context_type * load_context = forward_load_context_alloc( NULL , NULL , NULL);
+  forward_load_context_type * load_context = forward_load_context_alloc( NULL , NULL , NULL ,  NULL);
   test_assert_true( forward_load_context_is_instance( load_context ));
   forward_load_context_free( load_context );
 }
 
 void test_load_restart1() {
   run_arg_type * run_arg = run_arg_alloc_ENSEMBLE_EXPERIMENT(NULL , 0 , 0 , "run");
-  forward_load_context_type * load_context = forward_load_context_alloc( run_arg , NULL , NULL );
-  test_assert_false( forward_load_context_load_restart_file( load_context , "BASE" , false , 10 ));
+  forward_load_context_type * load_context = forward_load_context_alloc( run_arg , NULL , "BASE" , NULL );
+  test_assert_false( forward_load_context_load_restart_file( load_context , 10 ));
   forward_load_context_free( load_context );
   run_arg_free( run_arg );
 }
@@ -70,15 +70,15 @@ void test_load_restart2() {
   test_work_area_type * work_area = test_work_area_alloc("forward_load");
   {
     run_arg_type * run_arg = run_arg_alloc_ENSEMBLE_EXPERIMENT(NULL , 0 , 0 , "run");
-    forward_load_context_type * load_context = forward_load_context_alloc( run_arg , NULL , NULL );
+    forward_load_context_type * load_context = forward_load_context_alloc( run_arg , NULL , "BASE" , NULL );
     util_make_path("run");
     make_restart_mock( "run" , "BASE" , 1 );
     make_restart_mock( "run" , "BASE" , 3 );
 
-    test_assert_false( forward_load_context_load_restart_file( load_context , "BASE" , false , 0 ));
-    test_assert_true( forward_load_context_load_restart_file( load_context , "BASE" , false , 1 ));
-    test_assert_false( forward_load_context_load_restart_file( load_context , "BASE" , false , 2 ));
-    test_assert_true( forward_load_context_load_restart_file( load_context , "BASE" , false , 3 ));
+    test_assert_false( forward_load_context_load_restart_file( load_context , 0 ));
+    test_assert_true( forward_load_context_load_restart_file( load_context  , 1 ));
+    test_assert_false( forward_load_context_load_restart_file( load_context , 2 ));
+    test_assert_true( forward_load_context_load_restart_file( load_context  , 3 ));
 
     forward_load_context_free( load_context );
     run_arg_free( run_arg );
@@ -90,7 +90,7 @@ void test_load_restart2() {
 
 void test_add_message() {
   {
-    forward_load_context_type * load_context = forward_load_context_alloc( NULL , NULL , NULL);
+    forward_load_context_type * load_context = forward_load_context_alloc( NULL , NULL , NULL , NULL);
     forward_load_context_add_message( load_context , "MESSAGE" );
     test_assert_false( forward_load_context_accept_messages( load_context ));
     forward_load_context_free( load_context );
@@ -98,7 +98,7 @@ void test_add_message() {
 
   {
     stringlist_type * message_list = stringlist_alloc_new( );
-    forward_load_context_type * load_context = forward_load_context_alloc( NULL , NULL , message_list );
+    forward_load_context_type * load_context = forward_load_context_alloc( NULL , NULL , NULL , message_list );
 
     test_assert_true( forward_load_context_accept_messages( load_context ));
     forward_load_context_add_message( load_context , "MESSAGE1" );
