@@ -2124,9 +2124,6 @@ static void enkf_main_init_user_config( const enkf_main_type * enkf_main , confi
   item = config_add_schema_item( config , JOBNAME_KEY , false  );
   config_schema_item_set_argc_minmax(item , 1 , 1 );
 
-  item = config_add_schema_item(config , SELECT_CASE_KEY , false  );
-  config_schema_item_set_argc_minmax(item , 1 , 1 );
-
   item = config_add_schema_item(config , DBASE_TYPE_KEY , false  );
   config_schema_item_set_argc_minmax(item , 1, 1 );
   config_schema_item_set_common_selection_set(item , 2 , (const char *[2]) {"PLAIN" , "BLOCK_FS"});
@@ -2902,13 +2899,7 @@ enkf_main_type * enkf_main_bootstrap(const char * _model_config, bool strict , b
 
 
 	/*****************************************************************/
-	{
-	  const char * select_case = NULL;
-	  if (config_content_has_item( content , SELECT_CASE_KEY))
-	    select_case = config_content_get_value( content , SELECT_CASE_KEY );
-
-	  enkf_main_user_select_fs( enkf_main , select_case );
-	}
+        enkf_main_user_select_fs( enkf_main , NULL );
 
 	/* Adding ensemble members */
 	enkf_main_resize_ensemble( enkf_main  , config_content_iget_as_int(content , NUM_REALIZATIONS_KEY , 0 , 0) );
@@ -2959,15 +2950,12 @@ enkf_main_type * enkf_main_bootstrap(const char * _model_config, bool strict , b
    set to generate a valid configuration.
 */
 
-void enkf_main_create_new_config( const char * config_file , const char * storage_path , const char * case_name , const char * dbase_type , int num_realizations) {
+void enkf_main_create_new_config( const char * config_file , const char * storage_path , const char * dbase_type , int num_realizations) {
 
   FILE * stream = util_mkdir_fopen( config_file , "w" );
 
   fprintf(stream , CONFIG_KEY_FORMAT      , ENSPATH_KEY);
   fprintf(stream , CONFIG_ENDVALUE_FORMAT , storage_path );
-
-  fprintf(stream , CONFIG_KEY_FORMAT      , SELECT_CASE_KEY);
-  fprintf(stream , CONFIG_ENDVALUE_FORMAT , case_name);
 
   fprintf(stream , CONFIG_KEY_FORMAT      , DBASE_TYPE_KEY);
   fprintf(stream , CONFIG_ENDVALUE_FORMAT , dbase_type);
