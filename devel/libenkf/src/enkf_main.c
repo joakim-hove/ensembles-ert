@@ -184,6 +184,7 @@ void enkf_main_init_internalization( enkf_main_type *  , run_mode_type  );
 void enkf_main_update_local_updates( enkf_main_type * enkf_main);
 static void enkf_main_close_fs( enkf_main_type * enkf_main );
 static void enkf_main_init_fs( enkf_main_type * enkf_main );
+static void enkf_main_user_select_initial_fs(enkf_main_type * enkf_main );
 
 /*****************************************************************/
 
@@ -2899,7 +2900,7 @@ enkf_main_type * enkf_main_bootstrap(const char * _model_config, bool strict , b
 
 
 	/*****************************************************************/
-        enkf_main_user_select_fs( enkf_main , NULL );
+        enkf_main_user_select_initial_fs( enkf_main );
 
 	/* Adding ensemble members */
 	enkf_main_resize_ensemble( enkf_main  , config_content_iget_as_int(content , NUM_REALIZATIONS_KEY , 0 , 0) );
