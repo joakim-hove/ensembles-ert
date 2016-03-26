@@ -657,7 +657,7 @@ static void enkf_state_internalize_custom_kw(enkf_state_type * enkf_state,
             enkf_state_log_custom_kw_load(node, report_step, load_context);
           } else {
             forward_load_context_update_result(load_context, LOAD_FAILURE);
-            ert_log_add_fmt_message(1, stderr, "[%03d:%04d] Failed load data for node: %s.", iens , report_step, enkf_node_get_key(node));
+            ert_log_add_fmt_message(1, stderr, "[%03d:%04d] Failed load data for CUSTOM_KW node: %s.", iens , report_step, enkf_node_get_key(node));
 
             if (forward_load_context_accept_messages(load_context)) {
               char * msg = util_alloc_sprintf("Failed to load: %s at step: %d", enkf_node_get_key(node), report_step);
@@ -693,6 +693,7 @@ static void enkf_state_internalize_GEN_DATA(enkf_state_type * enkf_state ,
 	if (enkf_node_internalize(node , report_step)) {
 
 	  if (enkf_node_has_func(node , forward_load_func)) {
+            forward_load_context_select_step(load_context, report_step);
 	    if (enkf_node_forward_load(node , load_context )) {
 	      node_id_type node_id = {.report_step = report_step ,
 				      .iens = iens ,
@@ -702,7 +703,7 @@ static void enkf_state_internalize_GEN_DATA(enkf_state_type * enkf_state ,
               enkf_state_log_GEN_DATA_load( node , report_step , load_context);
 	    } else {
               forward_load_context_update_result(load_context, LOAD_FAILURE);
-	      ert_log_add_fmt_message(1 , stderr , "[%03d:%04d] Failed load data for node:%s.",iens , report_step , enkf_node_get_key( node ));
+	      ert_log_add_fmt_message(1 , stderr , "[%03d:%04d] Failed load data for GEN_DATA node:%s.",iens , report_step , enkf_node_get_key( node ));
 
               if (forward_load_context_accept_messages(load_context)) {
                 char * msg = util_alloc_sprintf("Failed to load: %s at step:%d" , enkf_node_get_key( node ) , report_step);
@@ -774,7 +775,7 @@ static void enkf_state_internalize_eclipse_state(enkf_state_type * enkf_state ,
                 enkf_node_store( enkf_node , result_fs, store_vectors , node_id );
               } else {
                 forward_load_context_update_result(load_context, LOAD_FAILURE);
-                ert_log_add_fmt_message( 1 , NULL , "[%03d:%04d] Failed load data for node:%s.",iens , report_step , enkf_node_get_key( enkf_node ));
+                ert_log_add_fmt_message( 1 , NULL , "[%03d:%04d] Failed load data for FIELD node:%s.",iens , report_step , enkf_node_get_key( enkf_node ));
 
                 if (forward_load_context_accept_messages(load_context)) {
                   char * msg = util_alloc_sprintf("Failed to load: %s at step:%d" , enkf_node_get_key( enkf_node ) , report_step);
