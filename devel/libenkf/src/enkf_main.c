@@ -2891,16 +2891,6 @@ enkf_main_type * enkf_main_bootstrap(const char * _model_config, bool strict , b
 	ert_templates_init( enkf_main->templates , content );
 
 
-	/*****************************************************************/
-	{
-	  const char * select_case = NULL;
-	  if (config_content_has_item( content , SELECT_CASE_KEY))
-	    select_case = config_content_get_value( content , SELECT_CASE_KEY );
-
-	  enkf_main_user_select_fs( enkf_main , select_case );
-	}
-
-
 	{
 	  const char * rft_config_file = NULL;
 	  if (config_content_has_item(content , RFT_CONFIG_KEY))
