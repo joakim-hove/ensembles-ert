@@ -183,6 +183,7 @@ struct enkf_main_struct {
 void enkf_main_init_internalization( enkf_main_type *  , run_mode_type  );
 void enkf_main_update_local_updates( enkf_main_type * enkf_main);
 static void enkf_main_close_fs( enkf_main_type * enkf_main );
+static void enkf_main_init_fs( enkf_main_type * enkf_main );
 
 /*****************************************************************/
 
@@ -2320,7 +2321,6 @@ enkf_main_type * enkf_main_alloc_empty( ) {
   enkf_main_type * enkf_main = util_malloc(sizeof * enkf_main);
   UTIL_TYPE_ID_INIT(enkf_main , ENKF_MAIN_ID);
   ert_log_open_empty();
-  enkf_main->dbase              = NULL;
   enkf_main->ensemble           = NULL;
   enkf_main->user_config_file   = NULL;
   enkf_main->site_config_file   = NULL;
@@ -2349,6 +2349,7 @@ enkf_main_type * enkf_main_alloc_empty( ) {
 
   enkf_main_init_subst_list( enkf_main );
   enkf_main_set_verbose( enkf_main , true );
+  enkf_main_init_fs( enkf_main );
   return enkf_main;
 }
 
