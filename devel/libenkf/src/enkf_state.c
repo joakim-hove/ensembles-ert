@@ -742,8 +742,7 @@ static void enkf_state_internalize_eclipse_state(enkf_state_type * enkf_state ,
     const int  iens                    = member_config_get_iens( my_config );
     const bool internalize_state       = model_config_internalize_state( model_config , report_step );
 
-    forward_load_context_load_restart_file( load_context ,
-					    report_step);
+    forward_load_context_load_restart_file( load_context , report_step);
 
     /******************************************************************/
     /**

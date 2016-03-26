@@ -49,9 +49,13 @@ void test_create() {
 
 void test_load_restart1() {
   run_arg_type * run_arg = run_arg_alloc_ENSEMBLE_EXPERIMENT(NULL , 0 , 0 , "run");
-  forward_load_context_type * load_context = forward_load_context_alloc( run_arg , NULL , "BASE" , NULL );
+  ecl_config_type * ecl_config = ecl_config_alloc( );
+  forward_load_context_type * load_context = forward_load_context_alloc( run_arg , ecl_config , "BASE" , NULL );
+
   test_assert_false( forward_load_context_load_restart_file( load_context , 10 ));
+
   forward_load_context_free( load_context );
+  ecl_config_free( ecl_config );
   run_arg_free( run_arg );
 }
 
@@ -70,7 +74,8 @@ void test_load_restart2() {
   test_work_area_type * work_area = test_work_area_alloc("forward_load");
   {
     run_arg_type * run_arg = run_arg_alloc_ENSEMBLE_EXPERIMENT(NULL , 0 , 0 , "run");
-    forward_load_context_type * load_context = forward_load_context_alloc( run_arg , NULL , "BASE" , NULL );
+    ecl_config_type * ecl_config = ecl_config_alloc( );
+    forward_load_context_type * load_context = forward_load_context_alloc( run_arg , ecl_config , "BASE" , NULL );
     util_make_path("run");
     make_restart_mock( "run" , "BASE" , 1 );
     make_restart_mock( "run" , "BASE" , 3 );
@@ -81,6 +86,7 @@ void test_load_restart2() {
     test_assert_true( forward_load_context_load_restart_file( load_context  , 3 ));
 
     forward_load_context_free( load_context );
+    ecl_config_free( ecl_config );
     run_arg_free( run_arg );
   }
   test_work_area_free( work_area );
@@ -116,6 +122,7 @@ void test_add_message() {
 
 
 int main(int argc , char ** argv) {
+  util_install_signals();
   test_create();
   test_load_restart1();
   test_load_restart2();

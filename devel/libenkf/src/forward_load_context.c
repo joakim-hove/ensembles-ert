@@ -29,8 +29,10 @@
 
 struct forward_load_context_struct {
   UTIL_TYPE_ID_DECLARATION;
+  // Everyuthing can be NULL here ... - when created from gen_data.
+
   ecl_sum_type        * ecl_sum;
-  ecl_file_type       * restart_file;   // This is set and cleared by calling scope.
+  ecl_file_type       * restart_file;
   const run_arg_type  * run_arg;
   char                * eclbase;
   const ecl_config_type * ecl_config;   // Can be NULL
@@ -38,7 +40,6 @@ struct forward_load_context_struct {
   int step1;
   int step2;
   stringlist_type * messages;          // This is managed by external scope - can be NULL
-
 
 
   /* The variables below are updated during the load process. */
@@ -57,7 +58,6 @@ static void forward_load_context_load_ecl_sum(forward_load_context_type * load_c
     const run_arg_type * run_arg           = forward_load_context_get_run_arg(load_context);
     const char * run_path                  = run_arg_get_runpath( run_arg );
     const char * eclbase                   = load_context->eclbase;
-    const ecl_config_type * ecl_config     = load_context->ecl_config;
 
     const bool fmt_file                    = ecl_config_get_formatted(load_context->ecl_config);
     char * header_file                     = ecl_util_alloc_exfilename(run_path , eclbase , ECL_SUMMARY_HEADER_FILE , fmt_file , -1);
@@ -195,33 +195,38 @@ void forward_load_context_free( forward_load_context_type * load_context ) {
   free( load_context );
 }
 
-bool forward_load_context_load_restart_file( forward_load_context_type * load_context ,
-					     int report_step) {
-  const bool unified = ecl_config_get_unified_restart( load_context->ecl_config );
-  if (unified)
-    util_abort("%s: sorry - unified restart files are not supported \n",__func__);
+bool forward_load_context_load_restart_file( forward_load_context_type * load_context, int report_step) {
+  if (load_context->ecl_config) {
+    const bool unified = ecl_config_get_unified_restart( load_context->ecl_config );
+    if (unified)
+      util_abort("%s: sorry - unified restart files are not supported \n",__func__);
 
-  {
-    const bool fmt_file  = ecl_config_get_formatted( load_context->ecl_config );
-    char * filename      = ecl_util_alloc_exfilename( run_arg_get_runpath(load_context->run_arg) ,
-                                                      load_context->eclbase,
-                                                      ECL_RESTART_FILE ,
-                                                      fmt_file ,
-                                                      report_step);
+    forward_load_context_select_step(load_context, report_step);
+    {
+      const bool fmt_file  = ecl_config_get_formatted( load_context->ecl_config );
+      char * filename      = ecl_util_alloc_exfilename( run_arg_get_runpath(load_context->run_arg) ,
+                                                        load_context->eclbase,
+                                                        ECL_RESTART_FILE ,
+                                                        fmt_file ,
+                                                        load_context->load_step );
 
-    if (load_context->restart_file)
-      ecl_file_close( load_context->restart_file );
-    load_context->restart_file = NULL;
+      if (load_context->restart_file)
+        ecl_file_close( load_context->restart_file );
+      load_context->restart_file = NULL;
 
-    if (filename) {
-      load_context->restart_file = ecl_file_open( filename , 0 );
-      free(filename);
+      if (filename) {
+        load_context->restart_file = ecl_file_open( filename , 0 );
+        free(filename);
+      }
+
+      if (load_context->restart_file)
+        return true;
+      else
+        return false;
     }
-
-    if (load_context->restart_file)
-      return true;
-    else
-      return false;
+  } else {
+    util_abort("%s: internal error - tried to load restart with load_context with ecl_config==NULL \n",__func__);
+    return false;
   }
 }
 
@@ -252,9 +257,6 @@ enkf_fs_type * forward_load_context_get_result_fs( const forward_load_context_ty
 
 void forward_load_context_select_step( forward_load_context_type * load_context , int report_step) {
   load_context->load_step = report_step;
-  if (load_context->restart_file) {
-    // Select block
-  }
 }
 
 int forward_load_context_get_load_step(const forward_load_context_type * load_context) {
