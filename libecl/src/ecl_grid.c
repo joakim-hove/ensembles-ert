@@ -2229,6 +2229,14 @@ static void ecl_grid_init_GRDECL_data_jslice(ecl_grid_type * ecl_grid ,  const f
             z[2][c] = zcorn[k*8*nx*ny + j*4*nx + 2*nx + 2*i     + c*4*nx*ny];
             z[3][c] = zcorn[k*8*nx*ny + j*4*nx + 2*nx + 2*i + 1 + c*4*nx*ny];
           }
+
+          for (int l = 0; l < 4; l++) {
+            if (z[l][1] < z[l][0]) {
+              fprintf(stderr, "**Warning: Corner:%d  degenerate in location (%d,%d,%d)  z1:%21.15f  z2:%21.15f  \n",l,i,j,k,z[l][0] , z[l][1]);
+              z[l][1] = z[l][0];
+            }
+          }
+
         }
 
         {
