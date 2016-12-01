@@ -818,8 +818,10 @@ static void job_queue_check_expired(job_queue_type * queue) {
       time_t now = time(NULL);
       if ( job_queue_get_max_job_duration(queue) > 0) {
         double elapsed = difftime(now, job_queue_node_get_sim_start( node ));
-        if (elapsed > job_queue_get_max_job_duration(queue))
+        /*
+          if (elapsed > job_queue_get_max_job_duration(queue))
           job_queue_change_node_status(queue, node, JOB_QUEUE_USER_EXIT);
+        */
       }
       if (job_queue_get_job_stop_time(queue) > 0) {
         if (now >= job_queue_get_job_stop_time(queue))
