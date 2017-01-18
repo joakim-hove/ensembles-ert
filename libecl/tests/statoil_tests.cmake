@@ -61,7 +61,6 @@ target_link_libraries( ecl_grid_cell_contains ecl test_util )
 add_test( ecl_grid_cell_contains1 ${EXECUTABLE_OUTPUT_PATH}/ecl_grid_cell_contains 1 )
 add_test( ecl_grid_cell_contains2 ${EXECUTABLE_OUTPUT_PATH}/ecl_grid_cell_contains 2 ${PROJECT_SOURCE_DIR}/test-data/Statoil/ECLIPSE/Gurbat/ECLIPSE.EGRID )
 add_test( ecl_grid_cell_contains3 ${EXECUTABLE_OUTPUT_PATH}/ecl_grid_cell_contains 3 ${PROJECT_SOURCE_DIR}/test-data/Statoil/ECLIPSE/FF12/FF12_2013B2.EGRID )
-
 add_test( ecl_grid_cell_contains4 ${EXECUTABLE_OUTPUT_PATH}/ecl_grid_cell_contains 4 ${PROJECT_SOURCE_DIR}/test-data/Statoil/ECLIPSE/Brazil/R3_ICD.EGRID )
 
 add_executable( ecl_grid_cell_volume ecl_grid_cell_volume.c )
