@@ -58,6 +58,23 @@ void test_grid_covering( const ecl_grid_type * grid) {
 }
 
 
+void test_contains_count0( const ecl_grid_type * grid ) {
+  int i0 = 36;
+  int j0 = 63;
+  int k0 = 13;
+
+  double x0,y0,z0;
+  double x2,y2,z2;
+  ecl_grid_get_xyz3( grid , i0,j0,k0     , &x0,&y0,&z0);
+  ecl_grid_get_xyz3( grid , i0,j0,k0 - 1 , &x2,&y2,&z2);
+
+
+  printf("Expected TRUE:  (%d,%d,%d) --> %g,%g,%g Contains: %d\n",i0,j0,k0,x0,y0,z0, ecl_grid_cell_contains_xyz3( grid , i0,j0,k0,x0,y0,z0));
+  printf("Expected FALSE: contains(%d,%d,%d) : %d \n",i0,j0,k0-1,ecl_grid_cell_contains_xyz3( grid , i0,j0,k0 - 1,x0,y0,z0));
+  printf("neighbour: %g,%g,%g\n",x2,y2,z2);
+  exit(1);
+}
+
 
 void test_contains_count( const ecl_grid_type * grid ) {
   int error_count = 0;
@@ -66,7 +83,6 @@ void test_contains_count( const ecl_grid_type * grid ) {
   const int nz = ecl_grid_get_nz( grid );
 
   for (int k=0; k < nz; k++) {
-    printf("k: %d/%d \n", k , nz - 1);
     for (int j=0; j < ny; j++) {
       for (int i=0; i < nx; i++) {
         double x,y,z;
@@ -89,6 +105,8 @@ void test_contains_count( const ecl_grid_type * grid ) {
               for (i2 = imin; i2 < imax; i2++) {
                 if (ecl_grid_cell_contains_xyz3( grid , i2,j2,k2 , x,y, z )) {
                   contains_count++;
+                  if ((i != i2) || (j != j2) || (k != k2))
+                    printf("%d,%d,%d   %d  %d  %d \n",i,j,k,i2-i , j2-j, k2-k);
                 }
               }
             }
@@ -105,6 +123,9 @@ void test_contains_count( const ecl_grid_type * grid ) {
       }
     }
   }
+  if (error_count > 0)
+    fprintf(stderr,"Error in %d/%d cells \n",error_count , nx*ny*nz);
+
   test_assert_int_equal( error_count , 0 );
 }
 
@@ -276,6 +297,7 @@ int main(int argc , char ** argv) {
     grid = ecl_grid_alloc( argv[2] );
 
   test_grid_covering( grid );
+  test_contains_count0( grid );
   test_contains_count( grid );
 
 
