@@ -540,12 +540,19 @@ static const int tetrahedron_contains_permutations[12][3]  = {{0,1,2},
                                                               {2,6,0}};
 
 
-static const int bounding_planes[6][3] = {{0,1,2},
-                                          {0,2,4},
-                                          {0,4,1},
-                                          {4,6,5},
-                                          {2,3,6},
-                                          {1,5,3}};
+static const int bounding_planes[12][3] = {{0,2,4},   // I+
+                                           {2,6,4},   // I+
+                                           {1,5,3},   // I-
+                                           {5,7,3},   // I-
+                                           {0,5,1},   // J+
+                                           {0,4,5},   // J+
+                                           {2,3,7},   // J-
+                                           {2,7,6},   // J-
+                                           {0,1,2},   // K+
+                                           {1,3,2},   // K+
+                                           {4,6,5},   // K-
+                                           {5,6,7}};  // K-
+
 
 
 
@@ -840,6 +847,7 @@ static void ecl_cell_dump( const ecl_cell_type * cell , FILE * stream) {
 static void ecl_cell_dump_txt( const ecl_cell_type * cell , FILE * stream) {
   int i;
   for (i=0; i < 8; i++) {
+    fprintf(stream , "%02d: ", i);
     point_dump_ascii( &cell->corner_list[i] , stream , NULL);
     fprintf(stream , "\n");
   }
@@ -1151,6 +1159,7 @@ static void ecl_cell_set_center( ecl_cell_type * cell) {
 }
 
 
+
 static void ecl_cell_assert_center( ecl_cell_type * cell) {
   if (!GET_CELL_FLAG(cell , CELL_FLAG_CENTER))
     ecl_cell_set_center( cell );
@@ -1269,90 +1278,6 @@ static inline double tetrahedron_volume6( tetrahedron_type tet ) {
 }
 
 
-static bool tetrahedron_contains( const tetrahedron_type * tet , matrix_type ** matrix_list, bool edge_inside, double x , double y , double z)
-{
-  /*
-             |x1 y1 z1 1|
-        D0 = |x2 y2 z2 1|
-             |x3 y3 z3 1|
-             |x4 y4 z4 1|
-
-             |x  y  z  1|
-        D1 = |x2 y2 z2 1|
-             |x3 y3 z3 1|
-             |x4 y4 z4 1|
-
-             |x1 y1 z1 1|
-        D2 = |x  y  z  1|
-             |x3 y3 z3 1|
-             |x4 y4 z4 1|
-
-             |x1 y1 z1 1|
-        D3 = |x2 y2 z2 1|
-             |x  y  z  1|
-             |x4 y4 z4 1|
-
-             |x1 y1 z1 1|
-        D4 = |x2 y2 z2 1|
-             |x3 y3 z3 1|
-             |x  y  z  1|
-
-Some additional notes:
-
-If by chance the D0=0, then your tetrahedron is degenerate (the points are coplanar).
-If any other Di=0, then P lies on boundary i (boundary i being that boundary formed by the three points other than Vi).
-If the sign of any Di differs from that of D0 then P is outside boundary i.
-If the sign of any Di equals that of D0 then P is inside boundary i.
-If P is inside all 4 boundaries, then it is inside the tetrahedron.
-As a check, it must be that D0 = D1+D2+D3+D4.
-
-
-  */
-  double D[5];
-  for (int i=0; i < 5; i++) {
-    matrix_type * mi = matrix_list[i];
-
-    matrix_iset( mi , 0 , 0 , tet->p0.x );
-    matrix_iset( mi , 0 , 1 , tet->p0.y );
-    matrix_iset( mi , 0 , 2 , tet->p0.z );
-    matrix_iset( mi , 0 , 3 , 1);
-
-    matrix_iset( mi , 1 , 0 , tet->p1.x );
-    matrix_iset( mi , 1 , 1 , tet->p1.y );
-    matrix_iset( mi , 1 , 2 , tet->p1.z );
-    matrix_iset( mi , 1 , 3 , 1);
-
-    matrix_iset( mi , 2 , 0 , tet->p2.x );
-    matrix_iset( mi , 2 , 1 , tet->p2.y );
-    matrix_iset( mi , 2 , 2 , tet->p2.z );
-    matrix_iset( mi , 2 , 3 , 1);
-
-    matrix_iset( mi , 3 , 0 , tet->p3.x );
-    matrix_iset( mi , 3 , 1 , tet->p3.y );
-    matrix_iset( mi , 3 , 2 , tet->p3.z );
-    matrix_iset( mi , 3 , 3 , 1);
-
-    if (i >= 1) {
-      matrix_iset( mi , i - 1 , 0 , x);
-      matrix_iset( mi , i - 1 , 1 , y);
-      matrix_iset( mi , i - 1 , 2 , z);
-    }
-    D[i] = matrix_det4( matrix_list[i] );
-  }
-
-
-  if (D[1] == 0)
-    return edge_inside;
-
-  {
-    for (int i = 1; i < 5; i++) {
-      if (D[i] * D[0] < 0 )
-        return false;
-    }
-
-    return true;
-  }
-}
 
 
 /*
@@ -3875,11 +3800,10 @@ bool ecl_grid_compare(const ecl_grid_type * g1 , const ecl_grid_type * g2 , bool
 
 /*****************************************************************/
 
-bool ecl_grid_cell_contains_xyz1_old( const ecl_grid_type * ecl_grid , int global_index , double x , double y , double z) {
+bool ecl_grid_cell_contains_xyz1( const ecl_grid_type * ecl_grid , int global_index , double x , double y , double z) {
   const double min_volume = 1e-9;
   point_type p;
   ecl_cell_type * cell = ecl_grid_get_cell( ecl_grid , global_index );
-  ecl_cell_dump_txt( cell , stdout );
   point_set( &p , x , y , z);
   /*
     1. first check if the point z value is below the deepest point of
@@ -3915,14 +3839,12 @@ bool ecl_grid_cell_contains_xyz1_old( const ecl_grid_type * ecl_grid , int globa
   {
     int i,j,k;
     ecl_grid_get_ijk1( ecl_grid , global_index , &i , &j , &k);
-    ecl_cell_assert_center( cell );
 
     /*
       Special case checks for the corner points.
     */
-    /*if (point_equal( &p , &cell->corner_list[0]))
+    if (point_equal( &p , &cell->corner_list[0]))
       return true;
-    */
 
     if (point_equal( &p , &cell->corner_list[1] )) {
       if (i == (ecl_grid->nx - 1))
@@ -3982,40 +3904,11 @@ bool ecl_grid_cell_contains_xyz1_old( const ecl_grid_type * ecl_grid , int globa
       int method = 0;
       double sign = 1.0;
       int plane_nr = 0;
-      bool debug = false;
+      bool debug = true;
       double signed_volume = ecl_cell_get_signed_volume( cell );
       matrix_type ** matrix_list = util_malloc( 5 * sizeof * matrix_list );
       bool inside = false;
-      for (int i=0; i < 5; i++)
-        matrix_list[i] = matrix_alloc(4,4);
-
-
-      if ((i == 15) && (j == 16) && (k == 3))
-        debug = true;
-
-      if (debug)
-        printf("ijk: (%d,%d,%d)  volume : %g   min:%g\n",i,j,k,signed_volume, min_volume);
-
-      if (fabs(signed_volume) > min_volume) {
-        for (int it = 0; it < 12; it++) {
-          tetrahedron_type tet;
-          bool edge_inside = false;
-          const int point0 = tetrahedron_permutations[ method ][ it ][ 0 ];
-          const int point1 = tetrahedron_permutations[ method ][ it ][ 1 ];
-          const int point2 = tetrahedron_permutations[ method ][ it ][ 2 ];
-
-          tet.p0 = cell->center;
-          tet.p1 = cell->corner_list[point0];
-          tet.p2 = cell->corner_list[point1];
-          tet.p3 = cell->corner_list[point2];
-
-          printf("V[%d]: %g \n",it, tetrahedron_volume6( tet ));
-          if (tetrahedron_contains( &tet , matrix_list , edge_inside , x,y,z)) {
-            printf("inside tet:%d \n",it);
-            inside = true;
-          }
-        }
-        /*
+      {
         point_type * p0;
         point_type * p1;
         point_type * p2;
@@ -4028,216 +3921,37 @@ bool ecl_grid_cell_contains_xyz1_old( const ecl_grid_type * ecl_grid , int globa
             p1 = &cell->corner_list[ bounding_planes[plane_nr][1] ];
             p2 = &cell->corner_list[ bounding_planes[plane_nr][2] ];
 
-            if (point_equal(p0, p1) || point_equal(p0,p2) || point_equal(p1,p2)) {
+            /*
+              if (point_equal(p0, p1) || point_equal(p0,p2) || point_equal(p1,p2)) {
               if (debug) printf("false0\n");
               return false;
-            }
+              }
+            */
 
             if (sign * point3_plane_distance(p0 , p1 , p2 , &p ) < 0) {
               if (debug) {
                 printf("false1\n");
                 printf("plane_nr:%d sign:%g  point3_plane_distance:%g \n",plane_nr , sign , point3_plane_distance(p0 , p1 , p2 , &p ));
+                {
+                  point_type n;
+                  point_normal_vector( &n , p0 , p1 , p2 );
+                  printf("Normal vector: ");
+                  point_dump_ascii(&n, stdout, NULL );
+                }
               }
               return false;
             }
 
             plane_nr++;
-            if (plane_nr == 6)
+            if (plane_nr == 12)
               return true;
-          }
-          }*/
-
-        for (int i=0; i < 5; i++)
-          matrix_free( matrix_list[i] );
-        free( matrix_list );
-        
-        return inside;
-      }
-    }
-  }
-}
-
-
-bool ecl_grid_cell_contains_xyz1( const ecl_grid_type * ecl_grid , int global_index , double x , double y , double z) {
-  const double min_volume = 1e-9;
-  point_type center,p;
-  ecl_cell_type * cell = ecl_grid_get_cell( ecl_grid , global_index );
-  ecl_cell_dump_txt( cell , stdout );
-
-  point_set( &p , x , y , z);
-  center = cell->corner_list[1];
-  point_inplace_add( &center , &cell->corner_list[2]);
-  point_inplace_add( &center , &cell->corner_list[5]);
-  point_inplace_add( &center , &cell->corner_list[6]);
-  point_inplace_scale( &center , 0.25 );
-
-
-  /*
-    1. first check if the point z value is below the deepest point of
-       the cell, or above the shallowest => return false.
-
-    2. should do similar fast checks in x/y direction.
-
-    3. full geometric verification.
-  */
-  if (GET_CELL_FLAG(cell , CELL_FLAG_TAINTED))
-    return false;
-
-  /*
-    if (p.z < ecl_cell_min_z( cell ))
-    return false;
-
-  if (p.z > ecl_cell_max_z( cell ))
-    return false;
-
-  if (p.x < ecl_cell_min_x( cell ))
-    return false;
-
-  if (p.x > ecl_cell_max_x( cell ))
-    return false;
-
-  if (p.y < ecl_cell_min_y( cell ))
-    return false;
-
-  if (p.y > ecl_cell_max_y( cell ))
-    return false;
-  */
-
-  {
-    int i,j,k;
-    ecl_grid_get_ijk1( ecl_grid , global_index , &i , &j , &k);
-    /*
-      Special case checks for the corner points.
-    */
-    if (point_equal( &p , &cell->corner_list[1] )) {
-      if (i == (ecl_grid->nx - 1))
-        return true;
-      else
-        return false;
-    }
-
-    if (point_equal( &p , &cell->corner_list[2])) {
-      if (j == (ecl_grid->ny - 1))
-        return true;
-      else
-        return false;
-    }
-
-    if (point_equal( &p , &cell->corner_list[3])) {
-      if ((j == (ecl_grid->ny - 1)) &&
-          (i == (ecl_grid->nx - 1)))
-        return true;
-      else
-        return false;
-    }
-
-    if (point_equal( &p , &cell->corner_list[4])) {
-      if (k == (ecl_grid->nz - 1))
-        return true;
-      else
-        return false;
-    }
-
-    if (point_equal( &p , &cell->corner_list[5] )) {
-      if ((i == (ecl_grid->nx - 1)) &&
-          (k == (ecl_grid->nz - 1)))
-        return true;
-      else
-        return false;
-    }
-
-    if (point_equal( &p , &cell->corner_list[6] )) {
-      if ((j == (ecl_grid->ny - 1)) &&
-          (k == (ecl_grid->nz - 1)))
-        return true;
-      else
-        return false;
-    }
-
-    if (point_equal( &p , &cell->corner_list[7] )) {
-      if ((i == (ecl_grid->nx - 1)) &&
-          (j == (ecl_grid->ny - 1)) &&
-          (k == (ecl_grid->nz - 1)))
-        return true;
-      else
-        return false;
-    }
-
-    {
-      int method = 0;
-      double sign = 1.0;
-      int plane_nr = 0;
-      bool debug = false;
-      double signed_volume = ecl_cell_get_signed_volume( cell );
-      matrix_type ** matrix_list = util_malloc( 5 * sizeof * matrix_list );
-      bool inside = false;
-      for (int i=0; i < 5; i++)
-        matrix_list[i] = matrix_alloc(4,4);
-
-
-      if ((i == 15) && (j == 16) && (k == 3))
-        debug = true;
-
-      if (debug)
-        printf("ijk: (%d,%d,%d)  volume : %g   min:%g\n",i,j,k,signed_volume, min_volume);
-
-      if (fabs(signed_volume) > min_volume) {
-        for (int it = 0; it < 12; it++) {
-          tetrahedron_type tet;
-          bool edge_inside = false;
-          const int point0 = tetrahedron_contains_permutations[ it ][ 0 ];
-          const int point1 = tetrahedron_contains_permutations[ it ][ 1 ];
-          const int point2 = tetrahedron_contains_permutations[ it ][ 2 ];
-
-          tet.p0 = center;
-          tet.p1 = cell->corner_list[point0];
-          tet.p2 = cell->corner_list[point1];
-          tet.p3 = cell->corner_list[point2];
-
-          point_dump_ascii(&center, stdout, NULL);
-
-          printf("V[%d]: %g \n",it, tetrahedron_volume6( tet ));
-          if (tetrahedron_contains( &tet , matrix_list , edge_inside , x,y,z)) {
-            printf("inside tet:%d \n",it);
-            inside = true;
           }
         }
-        /*
-        point_type * p0;
-        point_type * p1;
-        point_type * p2;
-
-        if (signed_volume < 0)
-          sign = -1;
-        {
-          while (true) {
-            p0 = &cell->corner_list[ bounding_planes[plane_nr][0] ];
-            p1 = &cell->corner_list[ bounding_planes[plane_nr][1] ];
-            p2 = &cell->corner_list[ bounding_planes[plane_nr][2] ];
-
-            if (point_equal(p0, p1) || point_equal(p0,p2) || point_equal(p1,p2)) {
-              if (debug) printf("false0\n");
-              return false;
-            }
-
-            if (sign * point3_plane_distance(p0 , p1 , p2 , &p ) < 0) {
-              if (debug) {
-                printf("false1\n");
-                printf("plane_nr:%d sign:%g  point3_plane_distance:%g \n",plane_nr , sign , point3_plane_distance(p0 , p1 , p2 , &p ));
-              }
-              return false;
-            }
-
-            plane_nr++;
-            if (plane_nr == 6)
-              return true;
-          }
-          }*/
 
         for (int i=0; i < 5; i++)
           matrix_free( matrix_list[i] );
         free( matrix_list );
-        
+
         return inside;
       }
     }
@@ -4812,11 +4526,33 @@ void ecl_grid_get_xyz1(const ecl_grid_type * grid , int global_index , double *x
 
 
 
+
 void ecl_grid_get_xyz3(const ecl_grid_type * grid , int i, int j , int k, double *xpos , double *ypos , double *zpos) {
   const int global_index = ecl_grid_get_global_index__(grid , i , j , k );
   ecl_grid_get_xyz1( grid , global_index , xpos , ypos , zpos);
 }
 
+
+
+
+
+/*bool ecl_grid_get_xyz_inside1(const ecl_grid_type * grid , int global_index , double *xpos , double *ypos , double *zpos) {
+  const ecl_cell_type * cell = ecl_grid_get_cell( grid , global_index );
+  point_type p = ecl_cell_get_xyz_inside( cell );
+
+  *xpos = p.x;
+  *ypos = p.y;
+  *zpos = p.z;
+
+  return true;
+}
+*/
+
+/*bool ecl_grid_get_xyz_inside3(const ecl_grid_type * grid , int i, int j , int k, double *xpos , double *ypos , double *zpos) {
+  const int global_index = ecl_grid_get_global_index__(grid , i , j , k );
+  return ecl_grid_get_xyz_inside1( grid , global_index , xpos, ypos, zpos );
+}
+*/
 
 
 

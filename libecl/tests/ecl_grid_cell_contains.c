@@ -24,6 +24,30 @@
 #include <ert/ecl/ecl_grid.h>
 
 
+bool get_test_point(const ecl_grid_type * grid , int i, int j , int k, double *_xpos , double *_ypos , double *_zpos) {
+  const int global_index = ecl_grid_get_global_index3(grid , i , j , k );
+  const int corners[4] = {1,2,5,6};
+  double xpos = 0;
+  double ypos = 0;
+  double zpos = 0;
+
+  for (int ci = 0; ci < 4; ci++) {
+    int corner = corners[ci];
+    double x,y,z;
+    ecl_grid_get_cell_corner_xyz3( grid , i ,  j , k , corner , &x, &y , &z);
+    xpos += x;
+    ypos += y;
+    zpos += z;
+  }
+
+  *_xpos = xpos * 0.25;
+  *_ypos = ypos * 0.25;
+  *_zpos = zpos * 0.25;
+}
+
+
+
+
 void test_grid_covering( const ecl_grid_type * grid) {
   const int nx = ecl_grid_get_nx( grid );
   const int ny = ecl_grid_get_ny( grid );
@@ -58,26 +82,16 @@ void test_grid_covering( const ecl_grid_type * grid) {
 }
 
 
-void test_contains_count0( const ecl_grid_type * grid ) {
-  int i0 = 36;
-  int j0 = 63;
-  int k0 = 13;
 
-  double x0,y0,z0;
-  double x2,y2,z2;
-  ecl_grid_get_xyz3( grid , i0,j0,k0     , &x0,&y0,&z0);
-  ecl_grid_get_xyz3( grid , i0,j0,k0 - 1 , &x2,&y2,&z2);
+void assert_contains( const ecl_grid_type * grid , int i , int j , int k , double x , double y , double z) {
+  if (!ecl_grid_cell_contains_xyz3( grid , i,j,k , x,y, z ))
+    fprintf(stderr," Point: (%g,%g,%g) not found in cell: (%d,%d,%d) \n",x,y,z,i,j,k);
 
-
-  printf("Expected TRUE:  (%d,%d,%d) --> %g,%g,%g Contains: %d\n",i0,j0,k0,x0,y0,z0, ecl_grid_cell_contains_xyz3( grid , i0,j0,k0,x0,y0,z0));
-  printf("Expected FALSE: contains(%d,%d,%d) : %d \n",i0,j0,k0-1,ecl_grid_cell_contains_xyz3( grid , i0,j0,k0 - 1,x0,y0,z0));
-  printf("neighbour: %g,%g,%g\n",x2,y2,z2);
-  exit(1);
+  test_assert_true( ecl_grid_cell_contains_xyz3( grid , i,j,k , x,y, z ));
 }
 
 
-void test_contains_count( const ecl_grid_type * grid ) {
-  int error_count = 0;
+void test_contains( const ecl_grid_type * grid ) {
   const int nx = ecl_grid_get_nx( grid );
   const int ny = ecl_grid_get_ny( grid );
   const int nz = ecl_grid_get_nz( grid );
@@ -85,48 +99,36 @@ void test_contains_count( const ecl_grid_type * grid ) {
   for (int k=0; k < nz; k++) {
     for (int j=0; j < ny; j++) {
       for (int i=0; i < nx; i++) {
-        double x,y,z;
-        ecl_grid_get_xyz3( grid , i,j,k , &x,&y,&z);
-        {
-          int i2,j2,k2;
-          int contains_count = 0;
-          int kmin = util_int_max( 0  , k - 1 );
-          int kmax = util_int_min( nz , k + 1 );
+        if (!ecl_grid_cell_invalid3( grid , i,j,k)) {
+          double x,y,z;
+          get_test_point( grid , i,j,k , &x,&y,&z);
+          assert_contains( grid , i , j , k , x , y , z);
+          {
+            int i2,j2,k2;
+            int kmin = util_int_max( 0  , k - 1 );
+            int kmax = util_int_min( nz , k + 1 );
 
-          int jmin = util_int_max( 0  , j - 1 );
-          int jmax = util_int_min( ny , j + 1 );
+            int jmin = util_int_max( 0  , j - 1 );
+            int jmax = util_int_min( ny , j + 1 );
 
-          int imin = util_int_max( 0  , i - 1 );
-          int imax = util_int_min( nx , i + 1 );
+            int imin = util_int_max( 0  , i - 1 );
+            int imax = util_int_min( nx , i + 1 );
 
 
-          for (k2 = kmin; k2 < kmax; k2++) {
-            for (j2 = jmin; j2 < jmax; j2++) {
-              for (i2 = imin; i2 < imax; i2++) {
-                if (ecl_grid_cell_contains_xyz3( grid , i2,j2,k2 , x,y, z )) {
-                  contains_count++;
-                  if ((i != i2) || (j != j2) || (k != k2))
-                    printf("%d,%d,%d   %d  %d  %d \n",i,j,k,i2-i , j2-j, k2-k);
+            for (k2 = kmin; k2 < kmax; k2++) {
+              for (j2 = jmin; j2 < jmax; j2++) {
+                for (i2 = imin; i2 < imax; i2++) {
+                  if ( (i != i2) && (j != j2 ) && (k != k2)) {
+                    test_assert_false( ecl_grid_cell_contains_xyz3( grid , i2,j2,k2 , x,y, z ) );
+                  }
                 }
               }
             }
-          }
-
-          if (contains_count != 1) {
-            if (contains_count > 1)
-              error_count += 1;
-            else
-              if (ecl_grid_cell_regular3( grid , i,j,k))
-                error_count += 1;
           }
         }
       }
     }
   }
-  if (error_count > 0)
-    fprintf(stderr,"Error in %d/%d cells \n",error_count , nx*ny*nz);
-
-  test_assert_int_equal( error_count , 0 );
 }
 
 
@@ -297,8 +299,7 @@ int main(int argc , char ** argv) {
     grid = ecl_grid_alloc( argv[2] );
 
   test_grid_covering( grid );
-  test_contains_count0( grid );
-  test_contains_count( grid );
+  test_contains( grid );
 
 
   test_find(grid);
