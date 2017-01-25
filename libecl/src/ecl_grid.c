@@ -3904,11 +3904,12 @@ bool ecl_grid_cell_contains_xyz1( const ecl_grid_type * ecl_grid , int global_in
       int method = 0;
       double sign = 1.0;
       int plane_nr = 0;
-      bool debug = true;
+      bool debug = false;
       double signed_volume = ecl_cell_get_signed_volume( cell );
       matrix_type ** matrix_list = util_malloc( 5 * sizeof * matrix_list );
       bool inside = false;
-      {
+
+      if (fabs( signed_volume) > min_volume) {
         point_type * p0;
         point_type * p1;
         point_type * p2;
@@ -3917,16 +3918,17 @@ bool ecl_grid_cell_contains_xyz1( const ecl_grid_type * ecl_grid , int global_in
           sign = -1;
         {
           while (true) {
+            if (plane_nr == 12)
+              return true;
+
             p0 = &cell->corner_list[ bounding_planes[plane_nr][0] ];
             p1 = &cell->corner_list[ bounding_planes[plane_nr][1] ];
             p2 = &cell->corner_list[ bounding_planes[plane_nr][2] ];
 
-            /*
-              if (point_equal(p0, p1) || point_equal(p0,p2) || point_equal(p1,p2)) {
-              if (debug) printf("false0\n");
-              return false;
-              }
-            */
+            if (point_equal(p0, p1) || point_equal(p0,p2) || point_equal(p1,p2)) {
+              plane_nr++;
+              continue;
+            }
 
             if (sign * point3_plane_distance(p0 , p1 , p2 , &p ) < 0) {
               if (debug) {
@@ -3943,17 +3945,15 @@ bool ecl_grid_cell_contains_xyz1( const ecl_grid_type * ecl_grid , int global_in
             }
 
             plane_nr++;
-            if (plane_nr == 12)
-              return true;
           }
         }
 
         for (int i=0; i < 5; i++)
           matrix_free( matrix_list[i] );
         free( matrix_list );
-
-        return inside;
       }
+
+      return inside;
     }
   }
 }
