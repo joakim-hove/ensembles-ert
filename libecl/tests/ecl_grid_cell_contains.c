@@ -35,6 +35,13 @@ bool get_test_point1(const ecl_grid_type * grid , int global_index, double *_xpo
   if (fabs(ecl_grid_get_cell_volume1( grid , global_index )) <= min_volume)
     return false;
 
+  if (ecl_grid_get_cell_twist1( grid , global_index ) > 0)
+    return false;
+
+  if (!ecl_grid_cell_regular1( grid , global_index ))
+    return false;
+
+
   for (int ci = 0; ci < 4; ci++) {
     int corner = corners[ci];
     double x,y,z;
@@ -147,10 +154,9 @@ void test_contains( const ecl_grid_type * grid ) {
 
 void test_find( ecl_grid_type * grid ) {
   int init_index;
-  int find_count = 1000;
+  int find_count = 250;
   int delta = util_int_max(1 , ecl_grid_get_global_size( grid ) / find_count);
   for (init_index = 0; init_index < ecl_grid_get_global_size( grid ); init_index += delta) {
-    printf("find index:%d \n",init_index / delta);
     if (ecl_grid_get_cell_twist1( grid , init_index ) == 0) {
       double x,y,z;
       int find_index;
@@ -163,6 +169,8 @@ void test_find( ecl_grid_type * grid ) {
 
           ecl_grid_get_ijk1( grid , init_index , &i1,&j1,&k1);
           ecl_grid_get_ijk1( grid , find_index , &i2,&j2,&k2);
+          printf("       point: %14.7f  %14.7f  %14.7f \n",x,y,z);
+          printf("       Regular: %d / %d \n",ecl_grid_cell_regular3(grid , i1,j1,k1) , ecl_grid_cell_regular3(grid , i2,j2,k2));
           printf("       init: contains(%7d) : %d   (%d,%d,%d) V:%g \n",init_index , ecl_grid_cell_contains_xyz1( grid , init_index   ,x , y , z), i1+1,j1+1,k1+1, ecl_grid_get_cell_volume1( grid , init_index));
           printf("ERROR: find: contains(%7d) : %d   (%d,%d,%d) V:%g  \n\n",find_index , ecl_grid_cell_contains_xyz1( grid , find_index   ,x , y , z), i2+1,j2+1,k2+1,ecl_grid_get_cell_volume1( grid , find_index));
           test_assert_int_equal(init_index , find_index );
