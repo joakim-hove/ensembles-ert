@@ -28,6 +28,21 @@ option( ERT_USE_OPENMP      "Use OpenMP"                                        
 option( ERT_DOC             "Build ERT documantation"                                 OFF)
 option( ERT_BUILD_CXX       "Build some CXX wrappers"                                 ON)
 
+#-----------------------------------------------------------------
+# Very very basic functionality to find the eclipse related libraries,
+# unless they are actually installed in default locations the
+# CMAKE_PREFIX_PATH should be used to indicate where they can be found.
+
+
+find_path( LIBECL_PATH ert/ecl/ecl_grid.h )
+include_directories( ${LIBECL_PATH} )
+
+find_library( UTIL_LIBRARY NAMES ert_util )
+find_library( ECL_LIBRARY NAMES ecl )
+find_library( GEO_LIBRARY NAMES ert_geometry )
+
+#-----------------------------------------------------------------
+
 
 
 

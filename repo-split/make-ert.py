@@ -20,4 +20,7 @@ if len(sys.argv) > 1:
 
 split = SplitRepo( org_repo , new_repo)
 split.filterBranch( delete_paths )
-split.updateCMake( "cmake/ert/CMakeLists.txt" )
+split.copyFile( "cmake/ert" , "CMakeLists.txt" )
+split.copyFile( "cmake/ert" , "libconfig/src/CMakeLists.txt")
+split.copyFile( "cmake/ert" , "libsched/src/CMakeLists.txt")
+split.copyFile( "cmake/ert" , "librms/src/CMakeLists.txt")

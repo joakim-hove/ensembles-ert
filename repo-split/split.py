@@ -43,9 +43,11 @@ class SplitRepo(object):
         os.chdir( new_repo )
 
 
-    def updateCMake(self , rel_path):
-        cmake_file = os.path.join( self._tool_path , rel_path)
-        if os.path.isfile( cmake_file ):
-            shutil.copyfile( cmake_file , "CMakeLists.txt")
+    def copyFile(self , src_prefix, rel_path):
+        src_file = os.path.join( self._tool_path , src_prefix, rel_path)
+        target_file = rel_path
+
+        if os.path.isfile( src_file ):
+            shutil.copyfile( src_file , target_file)
         else:
-            sys.exit("No such file: %s" % cmake_file)
+            sys.exit("No such file: %s" % src_file)
