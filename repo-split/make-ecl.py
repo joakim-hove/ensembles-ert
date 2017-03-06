@@ -9,7 +9,7 @@ delete_paths = ["libconfig", "devel/libconfig",
                 "libjob_queue" , "devel/libjob_queue",
                 "libenkf" , "devel/libenkf"]
 
-org_repo = "git@github.com:Ensembles/ert"
+org_repo = "https://github.com/Ensembles/ert"
 new_repo = "libecl"
 
 

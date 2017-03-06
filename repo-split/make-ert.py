@@ -10,7 +10,7 @@ delete_paths = ["libecl",
                 "libeclxx",
                 "libutilxx"]
 
-org_repo = "git@github.com:Ensembles/ert"
+org_repo = "https://github.com/Ensembles/ert"
 new_repo = "libert"
 
 
@@ -24,3 +24,6 @@ split.copyFile( "cmake/ert" , "CMakeLists.txt" )
 split.copyFile( "cmake/ert" , "libconfig/src/CMakeLists.txt")
 split.copyFile( "cmake/ert" , "libsched/src/CMakeLists.txt")
 split.copyFile( "cmake/ert" , "librms/src/CMakeLists.txt")
+split.copyFile( "cmake/ert" , "libanalysis/src/CMakeLists.txt")
+split.copyFile( "cmake/ert" , "libenkf/src/CMakeLists.txt")
+split.copyFile( "cmake/ert" , "libjob_queue/src/CMakeLists.txt")
